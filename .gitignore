@@ -1,0 +1,79 @@
+# -------------------------
+# Python cache & bytecode
+# -------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# C extensions
+*.so
+
+# -------------------------
+# IDE / Editor folders
+# -------------------------
+# VS Code
+.vscode/
+
+# PyCharm / JetBrains
+.idea/
+
+# -------------------------
+# Logs & temp files
+# -------------------------
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# -------------------------
+# Environment / secrets
+# -------------------------
+.env
+.env.*
+*.env
+*.secret
+
+# -------------------------
+# Miscellaneous
+# -------------------------
+*.pkl
+*.pickle
+*.h5
+*.db
+*.sqlite3
+
+# Ignore local datasets
+data/
+datasets/
+
+# Ignore local outputs
+outputs/
+results/
+figures/
+plots/
