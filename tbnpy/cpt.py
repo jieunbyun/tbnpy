@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from tbnpy.variable import Variable
 
@@ -13,54 +14,55 @@ class Cpt(object):
         childs (list): list of instances of Variable objects.
         parents (list): list of instances of Variable objects.
         C (array_like): event matrix.
-        p (array_like): probability vector related to C.
+        p (array_like): probability vector for the events of corresponding rows in C.
         Cs (array_like): event matrix of samples.
-        q (array_like): sampling probability vector related to Cs.
+        ps (array_like): sampling probability vector for the events of corresponding rows in Cs.
 
     Notes:
         C and p have the same number of rows.
-        Cs and q have the same number of rows.
+        Cs and ps have the same number of rows.
     '''
 
-    def __init__(self, variables, no_child, C=[], p=[], Cs=[], q=[], ps=[], sample_idx=[]):
+    def __init__(self, childs, parents, C=[], p=[], Cs=[], ps=[], device="cpu"):
 
-        self.variables = variables
-        self.no_child = no_child
+        self.device = device
+
+        self.childs = childs
+        self.parents = parents
         self.C = C
         self.p = p
         self.Cs = Cs
-        self.q = q
+        self.ps = ps
 
     # Magic methods
     def __hash__(self):
         return hash(self._name)
 
     def __eq__(self, other):
-        if isinstance(other, Cpm):
+        if isinstance(other, Cpt):
             return (
-                self._name == other._name and
-                self._variables == other._variables and
-                self._no_child == other._no_child and
+                self._childs == other._childs and
+                self._parents == other._parents and
                 self._C == other._C and
                 self._p == other._p and
                 self._Cs == other._Cs and
-                self._q == other._q
+                self._ps == other._ps
             )
         else:
             return False
 
     def __repr__(self):
         details = [
-            f"{self.__class__.__name__}(variables={self.get_names()},",
-            f"no_child={self.no_child},",
+            f"{self.__class__.__name__}(childs={get_names(self.childs)},",
+            f"parents={get_names(self.parents)},",
             f"C={self.C},",
             f"p={self.p},",
         ]
 
         if self._Cs.size:
             details.append(f"Cs={self._Cs},")
-        if self._q.size:
-            details.append(f"q={self._q},")
+        if self._ps.size:
+            details.append(f"ps={self._ps},")
 
         details.append(")")
         return "\n".join(details)
@@ -92,20 +94,21 @@ class Cpt(object):
 
     @C.setter
     def C(self, value):
-        if isinstance(value, list):
-            value = np.array(value, dtype=np.int32)
+        if value is None or (isinstance(value, list) and value == []):
+            self._C = torch.empty((0,0), dtype=torch.int64)
+            return
 
-        if value.size:
-            assert value.dtype in (np.dtype('int64'), np.dtype('int32')), f'Event matrix C must be a numeric matrix: {value}'
+        # Convert list/np/tensor → torch.Tensor(int64)
+        value = self._to_tensor(value, dtype=torch.int64)
 
-            if value.ndim == 1:
-                value.shape = (len(value), 1)
-            else:
-                assert value.shape[1] == len(self._variables), 'C must have the same number of columns as that of variables'
+        # shape corrections
+        if value.ndim == 1:
+            value = value.unsqueeze(1)
 
-            max_C = np.max(value, axis=0, initial=0)
-            max_var = [2**len(x.values)-1 for x in self._variables]
-            assert all(max_C <= max_var), f'check C matrix: {max_C} vs {max_var}'
+        # validate
+        if value.numel() > 0:
+            assert value.shape[1] == len(self._childs) + len(self._parents), \
+                "C must have same number of columns as variables"
 
         self._C = value
 
@@ -115,16 +118,19 @@ class Cpt(object):
 
     @p.setter
     def p(self, value):
-        if isinstance(value, list):
-            value = np.array(value)[:, np.newaxis]
+        if value is None or (isinstance(value, list) and value == []):
+            self._p = torch.empty((0,1), dtype=torch.float32)
+            return
 
+        value = self._to_tensor(value, dtype=torch.float32)
+
+        # reshape 1D → column
         if value.ndim == 1:
-            value.shape = (len(value), 1)
+            value = value.unsqueeze(1)
 
-        if value.size:
-            assert len(value) == self._C.shape[0], 'p must have the same length as the number of rows in C'
-
-            all(isinstance(y, (float, np.float32, np.float64, int, np.int32, np.int64)) for y in value), 'p must be a numeric vector'
+        if self._C.numel() > 0:
+            assert value.shape[0] == self._C.shape[0], \
+                "p must match number of rows in C"
 
         self._p = value
 
@@ -134,37 +140,68 @@ class Cpt(object):
 
     @Cs.setter
     def Cs(self, value):
-        if isinstance(value, list):
-            value = np.array(value, dtype=np.int32)
+        if value is None or (isinstance(value, list) and value == []):
+            self._Cs = torch.empty((0,0), dtype=torch.int64)
+            return
 
-        if value.size:
-            if value.ndim == 1: # event matrix for samples
-                value.shape = (len(value), 1)
-            else:
-                assert value.shape[1] == len(self._variables), 'Cs must have the same number of columns as the number of variables'
+        value = self._to_tensor(value, dtype=torch.int64)
 
-            max_Cs = np.max(value, axis=0, initial=0)
-            max_var_basic = [len(x.values) for x in self.variables]
-            assert all(max_Cs <= max_var_basic), f'check Cs matrix: {max_Cs} vs {max_var_basic}'
+        if value.ndim == 1:
+            value = value.unsqueeze(1)
+
+        if value.numel() > 0:
+            assert value.shape[1] == len(self._childs) + len(self._parents), \
+                "Cs must have same number of columns as variables"
 
         self._Cs = value
 
     @property
-    def q(self):
-        return self._q
+    def ps(self):
+        return self._ps
 
-    @q.setter
-    def q(self, value):
-        if isinstance(value, list):
-            value = np.array(value)[:, np.newaxis]
+    @ps.setter
+    def ps(self, value):
+        if value is None or (isinstance(value, list) and value == []):
+            self._ps = torch.empty((0,1), dtype=torch.float32)
+            return
+
+        value = self._to_tensor(value, dtype=torch.float32)
 
         if value.ndim == 1:
-            value.shape = (len(value), 1)
+            value = value.unsqueeze(1)
 
-        if value.size and self._Cs.size:
-            assert len(value) == self._Cs.shape[0], 'q must have the same length as the number of rows in Cs'
+        if self._Cs.numel() > 0:
+            assert value.shape[0] == self._Cs.shape[0], \
+                "ps must match number of rows in Cs"
 
-        if value.size:
-            all(isinstance(y, (float, np.float32, np.float64, int, np.int32, np.int64)) for y in value), 'q must be a numeric vector'
+        self._ps = value
 
-        self._q = value
+    @property
+    def device(self):
+        return self._device
+    
+    @device.setter
+    def device(self, value):
+        if isinstance(value, torch.device):
+            self._device = value
+        else:
+            self._device = torch.device(value)
+    
+    def _to_tensor(self, x, dtype=torch.float32):
+        """Convert list / numpy array / tensor → torch.Tensor."""
+        if isinstance(x, torch.Tensor):
+            return x.to(self.device, dtype=dtype)
+        if isinstance(x, np.ndarray):
+            return torch.tensor(x, dtype=dtype, device=self.device)
+        if isinstance(x, list):
+            return torch.tensor(x, dtype=dtype, device=self.device)
+
+        supported = (list, np.ndarray, torch.Tensor)
+        raise TypeError(
+            f"Unsupported data type: {type(x)}. "
+            f"Expected one of {supported}."
+)
+
+def get_names(var_list):
+    return [x.name for x in var_list]
+
