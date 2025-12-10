@@ -456,102 +456,139 @@ class Cpt(object):
         ps_all = torch.cat(ps_out, dim=0)
         return Cs_all, ps_all
     
+    def expand_and_check_compatibility_all(self, C_binary, samples_binary):
+        """
+        Generic compatibility check that treats ALL variables uniformly.
+        Unlike expand_and_check_compatibility, this function does not
+        distinguish between child and parent variables.
+        
+        C_binary:       (n_event,  n_vars, max_state)
+        samples_binary: (n_sample, n_vars, max_state)
+
+        Returns:
+            p_exp: (n_sample, n_event)
+                event probabilities with incompatible pairs zeroed.
+        """
+        device = C_binary.device
+        p = self.p.to(device)
+
+        n_event, n_vars, max_state_e = C_binary.shape
+        n_sample, n_vars_s, max_state_s = samples_binary.shape
+
+        assert n_vars == n_vars_s, \
+            f"C_binary has {n_vars} vars but samples_binary has {n_vars_s}"
+
+        # ---------------------------------------------------------
+        # 1. Pad to same max_state if needed
+        # ---------------------------------------------------------
+        max_global = max(max_state_e, max_state_s)
+
+        if max_global > max_state_e:
+            C_binary = torch.nn.functional.pad(C_binary, (0, max_global - max_state_e))
+
+        if max_global > max_state_s:
+            samples_binary = torch.nn.functional.pad(samples_binary, (0, max_global - max_state_s))
+
+        # ---------------------------------------------------------
+        # 2. Broadcast to compare all events × all samples
+        # ---------------------------------------------------------
+        # (n_event, n_sample, n_vars, max_state)
+        Cb_exp = C_binary.unsqueeze(1).expand(n_event, n_sample, n_vars, max_global)
+        Sb_exp = samples_binary.unsqueeze(0).expand(n_event, n_sample, n_vars, max_global)
+
+        # ---------------------------------------------------------
+        # 3. Compatibility check across ALL variables
+        # ---------------------------------------------------------
+        multiplied = Cb_exp * Sb_exp  # same shape
+
+        # For each (event, sample, variable): if all 0 → incompatible
+        zero_mask = multiplied.sum(dim=-1) == 0  # (n_event, n_sample, n_vars)
+
+        # Event/sample incompatible if ANY variable is incompatible
+        incompatible = zero_mask.any(dim=-1)     # (n_event, n_sample)
+
+        # compatible: 1; incompatible: 0
+        compatibility_mask = (~incompatible).float()  # (n_event, n_sample)
+
+        # ---------------------------------------------------------
+        # 4. Expand p over samples and apply mask
+        # ---------------------------------------------------------
+        if p.dim() == 1:
+            p_exp = p.unsqueeze(1).expand(n_event, n_sample)
+        else:
+            p_exp = p.expand(n_event, n_sample)
+
+        # Zero out incompatible ones
+        p_exp = p_exp * compatibility_mask
+
+        return p_exp.T  # (n_sample, n_event)
+    
     def log_prob(self, Cs, batch_size=100_000):
         """
-        Computes log-likelihood of given full composite states under this CPT.
-
-        Parameters
-        ----------
-        Cs : (n_samples, n_vars)
-            Composite states for ALL variables in this CPT.
-            The ordering must match self.C (childs first, then parents).
-
-        Returns
-        -------
-        log_ps : (n_samples,)
-            Log-likelihood of each sample.
+        Computes log P(sample | parents) for each row of Cs.
+        Cs is arranged in the same order as self.variables = childs + parents.
         """
-
         device = self.p.device
-        Cs = torch.as_tensor(Cs, device=device, dtype=torch.long)
-
         n_samples_total = Cs.size(0)
-        n_childs = len(self.childs)
-        n_parents = len(self.parents)
 
-        has_parents = n_parents > 0
+        variables = self.childs + self.parents
+        max_basic = max(len(v.values) for v in variables)
 
-        # --------------------------------------------
-        # Split Cs into child and parent composite states
-        # --------------------------------------------
-        Cs_childs = Cs[:, :n_childs]                                # (n_samples, n_childs)
-        Cs_pars   = Cs[:, n_childs:n_childs + n_parents]            # (n_samples, n_parents)
-
-        # --------------------------------------------------------
-        # CASE 1 — No parents: direct lookup
-        # --------------------------------------------------------
-        if not has_parents:
-            C = torch.as_tensor(self.C, device=device, dtype=torch.long)
-
-            # probabilities
-            p = self.p.squeeze()  # (n_events,)
-            p = p / (p.sum() + 1e-15)
-
-            # Match child part only
-            C_childs = C[:, :n_childs]
-
-            # Compare: (n_samples, n_events, n_childs)
-            match = (Cs_childs.unsqueeze(1) == C_childs.unsqueeze(0)).all(dim=-1)
-
-            event_idx = match.float().argmax(dim=1)
-            ps = p[event_idx]
-            return torch.log(ps + 1e-15)
-
-        # --------------------------------------------------------
-        # CASE 2 — Parents exist
-        # --------------------------------------------------------
-        # Convert parent composite states to C-binary (your existing method)
+        # ---------------------------------------------------------
+        # Convert full Cs into binary for all variables
+        # ---------------------------------------------------------
         bin_list = []
-        for row in Cs_pars:
-            parent_bin = []
-            for j, v in enumerate(self.parents):
-                parent_bin.append(v.get_Cst_to_Cbin(row[j]).unsqueeze(0))
-            parent_bin = torch.cat(parent_bin, dim=0)  # (n_parents, max_basic)
-            bin_list.append(parent_bin)
+        for row in Cs:
+            row_bin = []
+            for j, v in enumerate(variables):
 
-        samples_bin = torch.stack(bin_list, dim=0).to(device)        # (n_samples, n_parents, max_basic)
+                b = v.get_Cst_to_Cbin(row[j])    # shape: (k,) where k varies per variable
 
-        log_ps_out = []
+                # pad to max_basic
+                pad = max_basic - b.numel()
+                if pad > 0:
+                    b = torch.nn.functional.pad(b, (0, pad))
 
-        # --- batch loop ---
+                row_bin.append(b.unsqueeze(0))    # shape: (1, max_basic)
+
+            row_bin = torch.cat(row_bin, dim=0)   # shape: (n_vars, max_basic)
+            bin_list.append(row_bin)
+
+        samples_bin = torch.stack(bin_list, dim=0).to(device)
+        # shape: (n_samples, n_vars, max_basic)
+
+        # ---------------------------------------------------------
+        # Check compatibility in batches
+        # ---------------------------------------------------------
+
+        # C binary
+        Cb = self._get_C_binary()      # (n_events, n_vars, max_basic)
+
+        logp_out = []
+
         for start in range(0, n_samples_total, batch_size):
             end = min(start + batch_size, n_samples_total)
 
-            Cs_childs_batch = Cs_childs[start:end]
+            # batch parents → used in compatibility
             samples_bin_batch = samples_bin[start:end]
 
-            # 1. Compute compatibility & event probabilities
-            p_exp = self.expand_and_check_compatibility(
-                self._get_C_binary(),
+            # 1. compatibility using parent info
+            p_exp = self.expand_and_check_compatibility_all(
+                Cb,
                 samples_bin_batch
             )   # (batch, n_events)
+            
+            # 2. probability = sum p_exp
+            probs = p_exp.sum(dim=1)
 
-            p_norm = p_exp / (p_exp.sum(dim=1, keepdim=True) + 1e-15)
+            logp_out.append(torch.log(probs + 1e-15))
 
-            # 2. Identify matching event row by child Cs
-            C_childs_full = torch.as_tensor(self.C[:, :n_childs], device=device)
+        return torch.cat(logp_out, dim=0)
 
-            match = (Cs_childs_batch.unsqueeze(1) == C_childs_full.unsqueeze(0)).all(dim=-1)
-            event_idx = match.float().argmax(dim=1)
-
-            # 3. Extract likelihood for matching event
-            ps = p_norm[torch.arange(end-start), event_idx]
-            log_ps_out.append(torch.log(ps + 1e-15))
-
-        return torch.cat(log_ps_out, dim=0)
 
 def get_names(var_list):
     return [x.name for x in var_list]
+
 
 
 

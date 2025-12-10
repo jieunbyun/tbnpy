@@ -59,7 +59,7 @@ def dict_cpt4():
 
 @pytest.fixture
 def dict_cpt5():
-    # P(A3)
+    # P(A2, A3)
     A2 = variable.Variable(**{'name': 'A2',
                               'values': ['s', 'f']})
     A3 = variable.Variable(**{'name': 'A3',
@@ -232,6 +232,112 @@ def test_expand_and_check_compatibility2(dict_cpt2):
         [0.9, 0.1, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.5, 0.5, 0.0],
         [0.9, 0.1, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 1.0]
+    ], dtype=torch.float32)
+
+    # Assertions
+    assert p_exp.shape == expected.shape
+    assert torch.allclose(p_exp, expected), f"\nExpected:\n{expected}\nGot:\n{p_exp}"
+
+def test_expand_and_check_compatibility_all1(dict_cpt1):
+
+    # Setup CPT
+    T = cpt.Cpt(**dict_cpt1)
+    A1 = T.childs[0]
+    A2 = T.parents[0]
+    A3 = T.parents[1]
+
+    # Expand C to binary
+    C_binary = T._get_C_binary()
+
+    # Composite-state samples for parents (A2,A3)
+    raw_samples = torch.tensor([
+        [1,1,1],
+        [1,0,1],
+        [0,1,0],
+        [0,0,0]
+    ], dtype=torch.long)
+
+    # Convert composite → binary for each parent
+    sample_bin_list = []
+    for row in raw_samples:
+        bin_A1 = A1.get_Cst_to_Cbin(row[0]).unsqueeze(0)  # shape (1,2)
+        bin_A2 = A2.get_Cst_to_Cbin(row[1]).unsqueeze(0)  # shape (1,2)
+        bin_A3 = A3.get_Cst_to_Cbin(row[2]).unsqueeze(0)  # shape (1,2)
+
+        parent_stack = torch.cat([bin_A1, bin_A2, bin_A3], dim=0)  # (2,2)
+        sample_bin_list.append(parent_stack)
+
+    # Stack into shape (n_sample, n_variables, max_state)
+    samples_bin = torch.stack(sample_bin_list, dim=0)  # (5,2,2)
+
+    # Run compatibility expansion
+    p_exp = T.expand_and_check_compatibility_all(
+        C_binary,
+        samples_bin
+    )
+
+    # Expected filtered probabilities
+    expected = torch.tensor([
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0]
+    ], dtype=torch.float32)
+
+    # Assertions
+    assert p_exp.shape == expected.shape
+    assert torch.allclose(p_exp, expected), f"\nExpected:\n{expected}\nGot:\n{p_exp}"
+
+def test_expand_and_check_compatibility_all2(dict_cpt2):
+
+    # Setup CPT
+    T = cpt.Cpt(**dict_cpt2)
+    A1 = T.childs[0]
+    A2 = T.parents[0]
+    A3 = T.parents[1]
+
+    # Expand C to binary
+    C_binary = T._get_C_binary()
+
+    # Composite-state samples for parents (A2,A3)
+    raw_samples = torch.tensor([
+        [1,1,1],
+        [1,0,1],
+        [2,1,0],
+        [2,0,0]
+    ], dtype=torch.long)
+
+    # Convert composite → binary for each parent
+    sample_bin_list = []
+    for row in raw_samples:
+        bin_A1 = A1.get_Cst_to_Cbin(row[0]).unsqueeze(0)  # shape (1,3)
+
+        b = A2.get_Cst_to_Cbin(row[1]) # shape (2,)
+        b = torch.nn.functional.pad(b, (0,1)) # pad to (3,)
+        bin_A2 = b.unsqueeze(0)  # shape (1,3)
+
+        b = A3.get_Cst_to_Cbin(row[2]) # shape (2,)
+        b = torch.nn.functional.pad(b, (0,1)) # pad to (3,)
+        bin_A3 = b.unsqueeze(0)  # shape (1,3)
+
+        parent_stack = torch.cat([bin_A1, bin_A2, bin_A3], dim=0)  # (3,2)
+        sample_bin_list.append(parent_stack)
+
+    # Stack into shape (n_sample, n_variables, max_state)
+    samples_bin = torch.stack(sample_bin_list, dim=0)  # (5,3,2)
+
+    # Run compatibility expansion
+    p_exp = T.expand_and_check_compatibility_all(
+        C_binary,
+        samples_bin
+    )
+
+    # Expected filtered probabilities
+    expected = torch.tensor([
+        [0.0, 0.1, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.5, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0],
         [0.0, 0.0, 0.0, 0.0, 1.0]
     ], dtype=torch.float32)
 
@@ -512,6 +618,36 @@ def test_sample5(dict_cpt1):
             # Check returned probability
             assert abs(ps_list[i] - expected_ps[i]) < 1e-12, \
                 f"Row {i}: ps {ps_list[i]}, expected {expected_ps[i]}"
+            
+def test_log_prob1(dict_cpt1):
+
+    # Build CPT
+    mycpt = cpt.Cpt(**dict_cpt1)
+
+    # Cs = [A1, A2, A3] in composite form (child first, then parents)
+    Cs = torch.tensor([
+        [0, 1, 1],   # row 0: child=0, parents = (1,1)
+        [1, 0, 1],   # row 1
+        [1, 1, 0],   # row 2
+        [1, 0, 0],   # row 3 (not a CPT event; probability should be 0)
+    ], dtype=torch.long)
+
+    expected_probs = torch.tensor([
+        0.0,
+        1.0,
+        1.0,
+        0.0,
+    ])
+
+    expected_logp = torch.log(expected_probs + 1e-15)
+
+    # Run log_prob
+    out = mycpt.log_prob(Cs)
+
+    # Compare
+    assert torch.allclose(out, expected_logp, atol=1e-6), \
+        f"log_prob output incorrect.\nGot: {out}\nExpected: {expected_logp}"
+
 
 def test_log_prob2(dict_cpt2):
     """
@@ -532,6 +668,34 @@ def test_log_prob2(dict_cpt2):
 
     # Expected log probabilities
     expected_logp = torch.log(torch.tensor([0.9, 0.5, 0.1, 1.0]))
+
+    # Run log_prob
+    out = mycpt.log_prob(Cs)
+
+    # Compare
+    assert torch.allclose(out, expected_logp, atol=1e-6), \
+        f"log_prob output incorrect.\nGot: {out}\nExpected: {expected_logp}"
+
+def test_log_prob3(dict_cpt5):
+
+    # Build CPT
+    mycpt = cpt.Cpt(**dict_cpt5)
+
+    Cs = torch.tensor([
+        [1, 0],   # event 0
+        [0, 1],   # event 1
+        [1, 1],   # event 2
+        [0, 0],   # not an event; prob should be 0
+    ], dtype=torch.long)
+
+    expected_probs = torch.tensor([
+        0.5,
+        0.3,
+        0.2,
+        0.5,
+    ])
+
+    expected_logp = torch.log(expected_probs + 1e-15)
 
     # Run log_prob
     out = mycpt.log_prob(Cs)
