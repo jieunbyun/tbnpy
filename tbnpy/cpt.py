@@ -23,7 +23,7 @@ class Cpt(object):
         Cs and ps have the same number of rows.
     '''
 
-    def __init__(self, childs, parents, C=[], p=[], Cs=[], ps=[], device="cpu"):
+    def __init__(self, childs, parents=[], C=[], p=[], Cs=[], ps=[], device="cpu"):
 
         self.device = device
 
@@ -577,7 +577,7 @@ class Cpt(object):
                 Cb,
                 samples_bin_batch
             )   # (batch, n_events)
-            
+
             # 2. probability = sum p_exp
             probs = p_exp.sum(dim=1)
 

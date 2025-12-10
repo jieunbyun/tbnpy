@@ -49,8 +49,8 @@ class Variable:
             B_flag (str): flag to determine how B is generated.
         '''
         assert isinstance(name, str), 'name should be a string'
-        assert isinstance(values, (list, np.ndarray)), \
-            'values must be a list or np.ndarray'
+        assert isinstance(values, (list, np.ndarray, str)), \
+            'values must be a list, np.ndarray (for discrete), or str (for continuous)'
 
         self._name = name
         self._values = values
