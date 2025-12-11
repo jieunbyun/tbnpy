@@ -17,13 +17,14 @@ class Cpt(object):
         p (array_like): probability vector for the events of corresponding rows in C.
         Cs (array_like): event matrix of samples.
         ps (array_like): sampling probability vector for the events of corresponding rows in Cs.
+            NOTE: log probabilities are stored in ps.
 
     Notes:
         C and p have the same number of rows.
         Cs and ps have the same number of rows.
     '''
 
-    def __init__(self, childs, parents=[], C=[], p=[], Cs=[], ps=[], device="cpu"):
+    def __init__(self, childs, parents=[], C=[], p=[], Cs=[], ps=[], evidence=[], device="cpu"):
 
         self.device = device
 
@@ -33,6 +34,7 @@ class Cpt(object):
         self.p = p
         self.Cs = Cs
         self.ps = ps
+        self.evidence = evidence
 
     # Magic methods
     def __hash__(self):
@@ -140,18 +142,53 @@ class Cpt(object):
 
     @Cs.setter
     def Cs(self, value):
-        if value is None or (isinstance(value, list) and value == []):
-            self._Cs = torch.empty((0,0), dtype=torch.int64)
+        """
+        Acceptable shapes:
+            (n, )                               → reshaped to (n,1)
+            (n, m)                              → OK
+            (n_evi, n, m)                       → OK for evidence-aware sampling
+
+        m must equal len(childs) + len(parents).
+        """
+        if value is None or (isinstance(value, list) and len(value) == 0):
+            self._Cs = torch.empty((0, 0), dtype=torch.int64)
             return
 
         value = self._to_tensor(value, dtype=torch.int64)
 
+        # ------------------------------
+        # Normalize shapes
+        # ------------------------------
         if value.ndim == 1:
+            # Single variable output → treat as (n,1)
             value = value.unsqueeze(1)
 
+        elif value.ndim == 2:
+            # (n, m) → OK
+            pass
+
+        elif value.ndim == 3:
+            # (n_evi, n_sample, m) → OK
+            pass
+
+        else:
+            raise ValueError(f"Cs must be 1D, 2D, or 3D; got {value.ndim}D")
+
+        # ------------------------------
+        # Validate number of columns
+        # ------------------------------
         if value.numel() > 0:
-            assert value.shape[1] == len(self._childs) + len(self._parents), \
-                "Cs must have same number of columns as variables"
+            expected_cols = len(self._childs) + len(self._parents)
+
+            # Cs 2D: (n, m)
+            if value.ndim == 2:
+                assert value.shape[1] == expected_cols, \
+                    f"Cs must have {expected_cols} columns but got {value.shape[1]}."
+
+            # Cs 3D: (n_evi, n_sample, m)
+            if value.ndim == 3:
+                assert value.shape[2] == expected_cols, \
+                    f"Cs must have {expected_cols} columns but got {value.shape[2]}."
 
         self._Cs = value
 
@@ -161,20 +198,132 @@ class Cpt(object):
 
     @ps.setter
     def ps(self, value):
-        if value is None or (isinstance(value, list) and value == []):
-            self._ps = torch.empty((0,1), dtype=torch.float32)
+        """
+        Acceptable shapes:
+            (n,) → reshaped to (n,1)
+            (n,1) → OK
+            (n_evi, n) → evidence-aware sampling
+            (n_evi, n, 1) → reshaped to (n_evi, n)
+
+        Must match Cs batch shape.
+        """
+        if value is None or (isinstance(value, list) and len(value) == 0):
+            self._ps = torch.empty((0, 1), dtype=torch.float32)
             return
 
         value = self._to_tensor(value, dtype=torch.float32)
 
+        # ------------------------------
+        # Normalize shape
+        # ------------------------------
         if value.ndim == 1:
+            # (n,) → (n,1)
             value = value.unsqueeze(1)
 
-        if self._Cs.numel() > 0:
-            assert value.shape[0] == self._Cs.shape[0], \
-                "ps must match number of rows in Cs"
+        elif value.ndim == 2:
+            # Could be (n,1) or (n_evi, n)
+            pass
+
+        elif value.ndim == 3:
+            # (n_evi, n, 1) → (n_evi, n)
+            if value.shape[-1] == 1:
+                value = value.squeeze(-1)
+            else:
+                raise ValueError("ps 3D must have last dim = 1")
+
+        else:
+            raise ValueError(f"ps must be 1D, 2D, or 3D; got {value.ndim}D")
+
+        # ------------------------------
+        # Validate with Cs
+        # ------------------------------
+        if hasattr(self, "_Cs") and self._Cs.numel() > 0:
+            Cs = self._Cs
+
+            # Case A: Cs is 2D: (n, m)
+            if Cs.ndim == 2:
+                n = Cs.shape[0]
+                assert value.ndim == 2 and value.shape[0] == n, \
+                    f"ps must have first dim = {n}. Got {value.shape}."
+
+            # Case B: Cs is 3D: (n_evi, n, m)
+            elif Cs.ndim == 3:
+                n_evi, n = Cs.shape[0], Cs.shape[1]
+                assert value.ndim == 2, \
+                    f"ps must be 2D (n_evi, n). Got {value.shape}."
+                assert value.shape == (n_evi, n), \
+                    f"ps must match Cs dims {(n_evi, n)} but got {value.shape}."
+
+            else:
+                raise ValueError(f"Unexpected Cs shape: {Cs.shape}")
 
         self._ps = value
+
+    @property
+    def evidence(self):
+        return self._evidence
+
+
+    @evidence.setter
+    def evidence(self, value):
+        """
+        evidence: observations of the child variables.
+
+        Expected shape:
+            (n_evidence, n_childs)
+
+        Acceptable input types:
+            - None
+            - empty list []
+            - list
+            - numpy array
+            - torch tensor
+        """
+
+        # Handle None or empty list
+        if value is None or (isinstance(value, list) and len(value) == 0):
+            # store empty evidence matrix
+            self._evidence = torch.empty(
+                (0, len(self.childs)),
+                dtype=torch.int64,
+                device=self.device
+            )
+            return
+
+        # Convert to torch tensor
+        value = self._to_tensor(value, dtype=torch.int64)
+
+        n_childs = len(self.childs)
+        # Case 1: ONE child variable
+        if n_childs == 1:
+
+            # 1D evidence is valid → treat as (N, 1)
+            if value.ndim == 1:
+                value = value.unsqueeze(1)   # (N,1)
+
+            # otherwise must be (N,1)
+            assert value.ndim == 2 and value.shape[1] == 1, (
+                f"Evidence for 1 child must be shape (N,) or (N,1), "
+                f"but got {value.shape}"
+            )
+
+            self._evidence = value
+            return
+
+        # Case 2: MULTIPLE child variables
+        else:
+            # 1D evidence is NOT valid when multiple child variables exist
+            assert value.ndim == 2, (
+                f"Evidence must be 2D (N, {n_childs}) for a node "
+                f"with {n_childs} child variables. Got {value.shape}"
+            )
+
+            assert value.shape[1] == n_childs, (
+                f"Evidence has {value.shape[1]} columns but expected {n_childs}."
+            )
+
+            self._evidence = value
+            return
 
     @property
     def device(self):
@@ -400,6 +549,7 @@ class Cpt(object):
 
             Cs = C[event_idx, :n_childs]
             ps = p[event_idx]
+            ps = ps.log()
             return Cs, ps
 
         # ===========================================
@@ -454,6 +604,7 @@ class Cpt(object):
         # Stack all batches
         Cs_all = torch.cat(Cs_out, dim=0)
         ps_all = torch.cat(ps_out, dim=0)
+        ps_all = ps_all.log()
         return Cs_all, ps_all
     
     def expand_and_check_compatibility_all(self, C_binary, samples_binary):
@@ -584,6 +735,287 @@ class Cpt(object):
             logp_out.append(torch.log(probs + 1e-15))
 
         return torch.cat(logp_out, dim=0)
+    
+    def log_prob_evidence(self, Cs_par, batch_size=100_000):
+        """
+        Compute log P(evidence | parents(samples)) for each parent sample.
+        
+        Cs_par can be:
+            (N_samples, n_parents) or
+            (n_evi, N_samples, n_parents)   # evidence exists for parents too
+
+        Returns:
+            log_probs: (N_samples,) tensor of log probabilities
+        """
+
+        assert hasattr(self, "_evidence") and self._evidence is not None, \
+            "Evidence is not set. Use self.evidence = ... first."
+
+        device = Cs_par.device
+        evidence = self._evidence.to(device)
+
+        n_evi = evidence.size(0)
+        n_childs = len(self._childs)
+        n_parents = len(self._parents)
+
+        # Identify case:
+        # ---------------------------------------------------------------
+        # Case A: Cs_par is (N_samples, n_parents)
+        # ---------------------------------------------------------------
+        if Cs_par.ndim == 2:
+            n_samples = Cs_par.size(0)
+            case = "no_par_evi"
+        # ---------------------------------------------------------------
+        # Case B: Cs_par is (n_evi, N_samples, n_parents)
+        # ---------------------------------------------------------------
+        elif Cs_par.ndim == 3:
+            assert Cs_par.size(0) == n_evi, \
+                f"Cs_par first dimension must match n_evidence={n_evi}"
+            n_samples = Cs_par.size(1)
+            case = "par_evi"
+        else:
+            raise ValueError("Cs_par must be 2D or 3D.")
+
+        log_out = []
+
+        # Iterate over sample batches
+        for start in range(0, n_samples, batch_size):
+            end = min(start + batch_size, n_samples)
+            bsz = end - start
+
+            # ---------------- CASE A: no evidence for parents ----------------
+            if case == "no_par_evi":
+                batch_par = Cs_par[start:end]                             # (bsz, n_parents)
+
+                # expand evidence → (n_evi, bsz, n_childs)
+                ev_exp = evidence.unsqueeze(1).expand(n_evi, bsz, n_childs)
+
+                # expand parent samples → (n_evi, bsz, n_parents)
+                par_exp = batch_par.unsqueeze(0).expand(n_evi, bsz, n_parents)
+
+            # ---------------- CASE B: parent evidence exists -----------------
+            else:   # case == "par_evi"
+                # parent evidence together with child evidence
+                par_exp = Cs_par[:, start:end, :]                        # (n_evi, bsz, n_parents)
+
+                # broadcast child evidence to match bsz
+                ev_exp = evidence.unsqueeze(1).expand(n_evi, bsz, n_childs)
+
+
+            # Concatenate childs + parents
+            Cs_full = torch.cat([ev_exp, par_exp], dim=2)                # (n_evi, bsz, n_vars)
+
+            # flatten for log_prob
+            Cs_flat = Cs_full.reshape(-1, n_childs + n_parents)
+
+            # compute log_probs for each evidence row/sample
+            logp_flat = self.log_prob(Cs_flat)
+
+            # reshape to (n_evi, bsz)
+            logp_evi = logp_flat.reshape(n_evi, bsz)
+
+            # sum over evidence → (bsz,)
+            logp_batch = logp_evi.sum(dim=0)
+
+            log_out.append(logp_batch)
+
+        return torch.cat(log_out, dim=0)
+
+    def sample_evidence(self, Cs_pars, batch_size=100_000):
+        """
+        Samples from this CPT when Cs_pars contains parent evidence aligned
+        with child evidence.
+
+        Cs_pars shape:
+            (n_evi, n_samples, n_parents)
+
+        Returns:
+            Cs_out: (n_evi, n_samples, n_childs + n_parents)
+            ps_out: (n_evi, n_samples)    # probability of sampled event
+        """
+
+        assert Cs_pars.ndim == 3, \
+            "Cs_pars must be 3D: (n_evi, n_samples, n_parents)"
+
+        device = self.p.device
+        n_evi, n_samples_total, n_parents = Cs_pars.shape
+        n_childs = len(self.childs)
+
+        parent_vars = self.parents
+
+        # -----------------------------------------------------------
+        # Convert parent's composite states to binary
+        # -----------------------------------------------------------
+        # We'll produce samples_bin: (n_evi, n_samples, n_parents, max_basic)
+        bin_list = []
+
+        for evi_idx in range(n_evi):
+            par_bin_rows = []
+            for sample_idx in range(n_samples_total):
+                parent_bin_one = []
+                row = Cs_pars[evi_idx, sample_idx]
+                for j, v in enumerate(parent_vars):
+                    parent_bin_one.append(v.get_Cst_to_Cbin(row[j]).unsqueeze(0))
+                parent_bin_one = torch.cat(parent_bin_one, dim=0)  # (n_parents, max_basic)
+                par_bin_rows.append(parent_bin_one)
+            par_bin_rows = torch.stack(par_bin_rows, dim=0)  # (n_samples, n_parents, max_basic)
+            bin_list.append(par_bin_rows)
+
+        samples_bin = torch.stack(bin_list, dim=0).to(device)
+        # samples_bin shape: (n_evi, n_samples, n_parents, max_basic)
+
+        Cs_out_list = []
+        ps_out_list = []
+
+        # -----------------------------------------------------------
+        # Loop over n_evi (evidence rows)
+        # -----------------------------------------------------------
+        Cb = self._get_C_binary()   # event definitions (n_events, ..., ...)
+        n_events = self.p.numel()
+
+        for evi_idx in range(n_evi):
+
+            samples_bin_evi = samples_bin[evi_idx]  # (n_samples, n_parents, max_basic)
+
+            Cs_evi_batches = []
+            ps_evi_batches = []
+
+            for start in range(0, n_samples_total, batch_size):
+                end = min(start + batch_size, n_samples_total)
+
+                batch_bin = samples_bin_evi[start:end]   # (batch, n_parents, max_basic)
+
+                # -------------------------------------------------
+                # Compute compatibility, returns (batch, n_events)
+                # -------------------------------------------------
+                p_exp = self.expand_and_check_compatibility(
+                    Cb,
+                    batch_bin
+                )
+
+                # -------------------------------------------------
+                # Sample event index per sample
+                # -------------------------------------------------
+                Cs_batch, event_idx_batch = self.sample_from_p_exp(p_exp)
+
+                # Normalize and select probabilities
+                p_norm = p_exp / (p_exp.sum(dim=1, keepdim=True) + 1e-15)
+                ps_batch = p_norm[
+                    torch.arange(p_norm.size(0)), event_idx_batch
+                ]  # (batch,)
+
+                # -------------------------------------------------
+                # Build full Cs = [child, parents]
+                # -------------------------------------------------
+                # 1. child composite states: Cs_batch: (batch, n_childs)
+                # 2. parent assignments: Cs_pars[evi_idx, start:end]: (batch, n_parents)
+                parents_this_batch = Cs_pars[evi_idx, start:end].to(device)
+                Cs_full_batch = torch.cat([Cs_batch, parents_this_batch], dim=1)
+
+                Cs_evi_batches.append(Cs_full_batch)
+                ps_evi_batches.append(ps_batch)
+
+            # Merge batches for this evidence row
+            Cs_out_list.append(torch.cat(Cs_evi_batches, dim=0))
+            ps_out_list.append(torch.cat(ps_evi_batches, dim=0))
+
+        # Final shapes:
+        # Cs_out_list: list length n_evi, each (n_samples, n_childs + n_parents)
+        # stack → (n_evi, n_samples, n_childs + n_parents)
+        Cs_out = torch.stack(Cs_out_list, dim=0)
+
+        # ps_out_list: list length n_evi, each (n_samples,)
+        ps_out = torch.stack(ps_out_list, dim=0)
+        ps_out = ps_out.log()
+        return Cs_out, ps_out
+
+    def sample_evidence(self, Cs_pars, batch_size=100_000):
+        """
+        Vectorized sampling given aligned parent evidence.
+
+        Cs_pars: (n_evi, n_samples, n_parents)
+
+        Returns:
+            Cs_out: (n_evi, n_samples, n_childs + n_parents)
+            ps_out: (n_evi, n_samples)
+        """
+
+        assert Cs_pars.ndim == 3, \
+            "Cs_pars must be (n_evi, n_samples, n_parents)"
+
+        device = self.p.device
+        n_evi, n_samples, n_parents = Cs_pars.shape
+        n_childs = len(self.childs)
+
+        # -----------------------------------------------------
+        # Flatten evidence-parent input:
+        #   (n_evi, n_samples, n_parents)
+        # → (n_evi * n_samples, n_parents)
+        # -----------------------------------------------------
+        Cs_pars_flat = Cs_pars.reshape(-1, n_parents).to(device)
+        n_total = Cs_pars_flat.size(0)
+
+        # -----------------------------------------------------
+        # Convert parent composite states to binary (vectorized)
+        # -----------------------------------------------------
+        parent_vars = self.parents
+        bin_list = []
+
+        for j, v in enumerate(parent_vars):
+            # v.get_Cst_to_Cbin takes shape () → (k,)
+            # apply over the entire column
+            col = Cs_pars_flat[:, j]
+            bin_j = torch.stack([v.get_Cst_to_Cbin(val) for val in col], dim=0)
+            bin_list.append(bin_j.unsqueeze(1))   # shape (n_total, 1, max_basic)
+
+        # parent_bin: (n_total, n_parents, max_basic)
+        parent_bin = torch.cat(bin_list, dim=1).to(device)
+
+        # -----------------------------------------------------
+        # Prepare outputs
+        # -----------------------------------------------------
+        Cs_out_list = []
+        ps_out_list = []
+
+        Cb = self._get_C_binary()  # (n_events, n_vars, max_basic)
+
+        # -----------------------------------------------------
+        # Batch over flattened samples
+        # -----------------------------------------------------
+        for start in range(0, n_total, batch_size):
+            end = min(start + batch_size, n_total)
+
+            parent_bin_batch = parent_bin[start:end]  # (batch, n_parents, max_basic)
+
+            # 1. compatibility: (batch, n_events)
+            p_exp = self.expand_and_check_compatibility(Cb, parent_bin_batch)
+
+            # 2. sample event index per row
+            Cs_batch, event_idx_batch = self.sample_from_p_exp(p_exp)
+
+            # 3. probability of selected event
+            p_norm = p_exp / (p_exp.sum(dim=1, keepdim=True) + 1e-15)
+            ps_batch = p_norm[torch.arange(p_norm.size(0)), event_idx_batch]
+
+            # 4. assemble full Cs = [child | parent]
+            parent_vals = Cs_pars_flat[start:end]   # (batch, n_parents)
+            Cs_full = torch.cat([Cs_batch, parent_vals], dim=1)
+
+            Cs_out_list.append(Cs_full)
+            ps_out_list.append(ps_batch)
+
+        # Merge batches
+        Cs_flat_all = torch.cat(Cs_out_list, dim=0)   # (n_total, n_childs + n_parents)
+        ps_flat_all = torch.cat(ps_out_list, dim=0)   # (n_total,)
+
+        # -----------------------------------------------------
+        # Reshape back to (n_evi, n_samples, ...)
+        # -----------------------------------------------------
+        Cs_out = Cs_flat_all.reshape(n_evi, n_samples, n_childs + n_parents)
+        ps_out = ps_flat_all.reshape(n_evi, n_samples)
+        ps_out = ps_out.log()
+
+        return Cs_out, ps_out
 
 
 def get_names(var_list):

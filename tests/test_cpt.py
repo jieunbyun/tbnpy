@@ -703,3 +703,118 @@ def test_log_prob3(dict_cpt5):
     # Compare
     assert torch.allclose(out, expected_logp, atol=1e-6), \
         f"log_prob output incorrect.\nGot: {out}\nExpected: {expected_logp}"
+
+def test_log_prob_evidence1(dict_cpt2):
+
+    # Build CPT
+    mycpt = cpt.Cpt(**dict_cpt2)
+
+    mycpt.evidence = np.array([1, 1, 1]) # three observations
+
+    # Cs = [A1, A2, A3] in composite form (child first, then parents)
+    Cs = torch.tensor([
+        [1, 1],   # row 0: child=0, parents = (1,1)
+        [0, 1],   # row 1
+        [1, 0],   # row 2
+    ], dtype=torch.long)
+
+    expected_probs = torch.tensor([
+        0.001, # 0.1*0.1*0.1
+        0.125, # 0.5*0.5*0.5
+        0.001, # 0.1*0.1*0.1
+    ])
+
+    expected_logp = torch.log(expected_probs + 1e-15)
+
+    # Run log_prob
+    out = mycpt.log_prob_evidence(Cs)
+
+    # Compare
+    assert torch.allclose(out, expected_logp, atol=1e-6), \
+        f"log_prob_evidence output incorrect.\nGot: {out}\nExpected: {expected_logp}"
+    
+def test_log_prob_evidence2(dict_cpt2):
+    # for case where parent has evidence: A2: [1, 0, 1]
+
+    # Build CPT
+    mycpt = cpt.Cpt(**dict_cpt2)
+
+    mycpt.evidence = np.array([1, 1, 1]) # three observations
+
+    # Cs_par = [A2, A3] 
+    Cs_par = torch.tensor([
+        [[1, 1],   # evidence row 1 of A2, two samples on A3 [1, 0]
+        [1, 0]],
+
+        [[0, 1],   # evidence row 2
+        [0, 0]],
+
+        [[1, 1],   # evidence row 3
+        [1, 0]]
+    ])
+
+    expected_probs = torch.tensor([
+        0.005, # 0.1*0.5*0.1
+        0.0, # 0.1*0.0*0.9
+    ])
+
+    expected_logp = torch.log(expected_probs + 1e-15)
+
+    # Run log_prob
+    out = mycpt.log_prob_evidence(Cs_par)
+
+    # Compare
+    assert torch.allclose(out[0], expected_logp[0], atol=1e-6)
+    assert torch.allclose(torch.exp(out[1]), torch.exp(expected_logp[1]), atol=1e-6) # zero prob.
+
+def test_sample_evidence1(dict_cpt2):
+    # for case where parent has evidence: A2: [1, 0, 1]
+
+    # Build CPT
+    mycpt = cpt.Cpt(**dict_cpt2)
+
+    # Cs_par = [A2, A3] 
+    Cs_par = torch.tensor([
+        [[1, 1],   # evidence row 1 of A2, two samples on A3 [1, 0]
+        [1, 0]],
+
+        [[0, 1],   # evidence row 2
+        [0, 0]],
+
+        [[1, 1],   # evidence row 3
+        [1, 0]]
+    ])
+
+    Cs, ps = mycpt.sample_evidence(Cs_pars=Cs_par)
+
+    expected_map = {
+        (0, 1, 0): 0.9,
+        (1, 1, 0): 0.1,
+        (2, 0, 0): 1.0,
+        (0, 1, 1): 0.9,
+        (1, 1, 1): 0.1,
+        (1, 0, 1): 0.5,
+        (2, 0, 1): 0.5,
+    }
+
+    n_evi, n_samples, _ = Cs.shape
+
+    for i in range(n_evi):
+        for j in range(n_samples):
+
+            # Extract composite state
+            key = tuple(int(x) for x in Cs[i, j].tolist())
+
+            # Verify key exists
+            assert key in expected_map, \
+                f"Unexpected composite state Cs[{i},{j}]={key}"
+
+            # Expected probability
+            expected_p = expected_map[key]
+
+            # Check probability matches
+            assert abs(ps[i, j].item() - expected_p) < 1e-6, \
+                f"Incorrect prob for Cs[{i},{j}]={key}. " \
+                f"Got {ps[i,j].item()}, expected {expected_p}"
+            
+    
