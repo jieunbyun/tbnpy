@@ -12,20 +12,20 @@ class OC:
         self.parents = parents
         self.device = device
 
-        # standard deviation is fixed to 1.0
-        self.std = torch.tensor(1.0, device=device)
+        # standard deviation is fixed
+        self.std = torch.tensor(0.5, device=device)
 
     # --------------------------------------------------------------
-    def sample(self, OCs_par):
+    def sample(self, Cs_pars):
         """
-        OCs_par: tensor (N, 1)
-            OCs_par[:,0] = C value
+        Cs_pars: tensor (N, 1)
+            Cs_pars[:,0] = C value
 
         Returns:
             OC samples of shape (N,)
         """
-        OCs_par = OCs_par.to(self.device)
-        C_val = OCs_par[:, 0]
+        Cs_pars = Cs_pars.to(self.device)
+        C_val = Cs_pars[:, 0]
 
         dist = Normal(C_val, self.std)
         Cs = dist.rsample()  # (N,)

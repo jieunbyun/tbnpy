@@ -2,72 +2,78 @@ import torch
 from torch.distributions import Normal
 
 class C:
-    def __init__(self, childs, parents, Cs=[], ps=[], device='cpu'):
+    def __init__(self, childs, parents, sigma=0.6, device="cpu"):
         """
-        childs: a list of child variables [C]
-        parents: list [A, B] where A and B are variable.Variable
+        C | A,B ~ Normal(A + B, sigma^2)
+
+        childs  : [Variable C]
+        parents : [Variable A, Variable B]
+        sigma   : fixed noise std (float)
         """
         self.childs = childs
         self.parents = parents
-        self.Cs = Cs
-        self.ps = ps
         self.device = device
 
+        self.sigma = float(sigma)
+
+        # parent variables
         self.A = parents[0]
         self.B = parents[1]
-        
-        # Convert parent values to tensors
-        self.A_values = torch.tensor(self.A.values, dtype=torch.float32, device=device)
-        self.B_values = torch.tensor(self.B.values, dtype=torch.float32, device=device)
 
-    def sample(self, Cs_par):
+        # value lookup tables
+        self.A_values = torch.tensor(
+            self.A.values, dtype=torch.float32, device=device
+        )
+        self.B_values = torch.tensor(
+            self.B.values, dtype=torch.float32, device=device
+        )
+
+    # ------------------------------------------------------------------
+    def sample(self, Cs_pars):
         """
-        Cs_par: tensor of shape (N, 2)
-                Cs_par[:,0] = indices for A
-                Cs_par[:,1] = indices for B
+        Cs_pars : (N, 2)
+            Cs_pars[:,0] = A index
+            Cs_pars[:,1] = B index
 
-        Returns:
-            C_sample:   tensor (N,)
-            log_prob:   tensor (N,) where log_prob = log p(C | A, B)
+        Returns
+        -------
+        Cs   : (N,) sampled C values
+        logp : (N,) log p(C | A,B)
         """
+        Cs_pars = Cs_pars.to(self.device).long()
 
-        # Ensure tensor on correct device
-        Cs_par = Cs_par.to(self.device).long()
+        A_idx = Cs_pars[:, 0]
+        B_idx = Cs_pars[:, 1]
 
-        # Extract mean and std dev using indexing
-        a_idx = Cs_par[:, 0]   # shape: (N,)
-        b_idx = Cs_par[:, 1]   # shape: (N,)
+        mean = self.A_values[A_idx] + self.B_values[B_idx]
+        std = torch.full_like(mean, self.sigma)
 
-        means = self.A_values[a_idx]         # μ values
-        stds  = self.B_values[b_idx].abs()   # σ values must be positive
-
-        # Normal distribution sampling
-        dist = Normal(means, stds)
-        # sample C
-        Cs = dist.rsample()
-
-        # compute log P(C | A, B)
+        dist = Normal(mean, std)
+        Cs = dist.sample()
         logp = dist.log_prob(Cs)
 
-        return Cs, logp  # shape: (N,), (N,)
+        return Cs, logp
 
+    # ------------------------------------------------------------------
     def log_prob(self, Cs):
         """
-        Cs: shape (N, 3)
+        Cs : (N, 3)
             Cs[:,0] = C value
             Cs[:,1] = A index
             Cs[:,2] = B index
 
-        Returns:
-            log p(C | A, B), shape (N,)
+        Returns
+        -------
+        log p(C | A,B) : (N,)
         """
         Cs = Cs.to(self.device)
+
+        C_val = Cs[:, 0]
         A_idx = Cs[:, 1].long()
         B_idx = Cs[:, 2].long()
-        C_val = Cs[:, 0]
 
-        means = self.A_values[A_idx]            # (N,)
-        stds  = self.B_values[B_idx].abs()
+        mean = self.A_values[A_idx] + self.B_values[B_idx]
+        std = torch.full_like(mean, self.sigma)
 
-        dist = Normal(means, stds)
-        return dist.log_prob(C_val)             # (N,)
+        dist = Normal(mean, std)
+        return dist.log_prob(C_val)

@@ -15,8 +15,8 @@ device = ('cuda' if os.environ.get('USE_CUDA', '0') == '1' else 'cpu')
 
 def define_variables():
     varis = {}
-    varis['A'] = variable.Variable(name='A', values=[0.0, 0.5])
-    varis['B'] = variable.Variable(name='B', values=[0.5, 1.0, 1.5])
+    varis['A'] = variable.Variable(name='A', values=[-0.3, 0.3])
+    varis['B'] = variable.Variable(name='B', values=[-0.2, 0.0, 0.2])
     varis['C'] = variable.Variable(name='C', values='unitless')  # Continuous
     varis['OC'] = variable.Variable(name='OC', values='unitless')  # Continuous
     varis['D'] = variable.Variable(name='D', values=[0, 1])      # Binary
