@@ -36,7 +36,7 @@ def define_evidence(n_evi=10, seed=123):
     rng = np.random.default_rng(seed)
 
     evidence = pd.DataFrame({
-        "OC": rng.normal(loc=0.1, scale=0.7, size=n_evi)
+        "OC": rng.normal(loc=-0.3, scale=0.05, size=n_evi)
     })
 
     return evidence
@@ -240,11 +240,11 @@ if __name__ == "__main__":
     varis = define_variables()
     probs = define_probs(varis, device=device)
 
-    n_evi = 5
+    n_evi = 20
     evidence = define_evidence(n_evi=n_evi)
 
     n_chain = 100
-    n_iter = 30_000
+    n_iter = 100_000
     burnin = 200
 
     query_varis = {v: varis[v] for v in ['A', 'B', 'C', 'OC']} # only infer OC's ancestors
