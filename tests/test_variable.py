@@ -25,6 +25,27 @@ def test_init2():
     np.testing.assert_array_equal(a.name, name)
     np.testing.assert_array_equal(a.values, value)
 
+def test_init3():
+    name = 'A'
+    value = (0.0, 1.0)
+
+    var = {'name': name, 'values': value}
+    a = variable.Variable(**var)
+
+    assert isinstance(a, variable.Variable)
+    np.testing.assert_array_equal(a.name, name)
+    np.testing.assert_array_equal(a.values, value)
+
+def test_init4():
+    name = 'A'
+    a = variable.Variable(name)
+    value = (0.0, torch.inf)
+    a.values = value
+
+    assert isinstance(a, variable.Variable)
+    np.testing.assert_array_equal(a.name, name)
+    np.testing.assert_array_equal(a.values, value)
+
 def test_eq1():
     name = 'A'
     value = ['failure', 'survival']

@@ -12,11 +12,11 @@ class Variable:
     ----------
     name : str
         Name of the variable.
-    values : list or str
+    values : list or tuple
         If list, considered a discrete-state variable, with states 0, 1, 2, ... .
         (e.g. ['low', 'medium', 'high'] or ['failure', 'survival'])
-        If str, considered a continuous variable.
-        (e.g. 'PGA (g)' or 'km')
+        If tuple, considered a continuous variable, with min and max values.
+        (e.g. (0.0, 1.0) or (-torch.inf, torch.inf))
 
     Notes: How to reduce memory of C matrix using composite states
     -----
@@ -40,7 +40,7 @@ class Variable:
     For example: `['failure', 'survival']` since `0 < 1`.
     """
 
-    def __init__(self, name: str, values: list=[]):
+    def __init__(self, name: str, values = None):
         '''Initialise the Variable object.
 
         Args:
@@ -49,8 +49,8 @@ class Variable:
             B_flag (str): flag to determine how B is generated.
         '''
         assert isinstance(name, str), 'name should be a string'
-        assert isinstance(values, (list, np.ndarray, str)), \
-            'values must be a list, np.ndarray (for discrete), or str (for continuous)'
+        assert values is None or isinstance(values, (list, np.ndarray, tuple)), \
+            'values must be a list, np.ndarray (for discrete), or tuple (for continuous)'
 
         self._name = name
         self._values = values
@@ -91,8 +91,25 @@ class Variable:
 
     @values.setter
     def values(self, new_values):
-        assert isinstance(new_values, (list, np.ndarray, str)), 'values must be a list, np.ndarray, or str'
-        self._values = new_values
+        
+        if new_values is None:
+            self._values = None
+            return
+
+        # Discrete variable
+        if isinstance(new_values, (list, np.ndarray)):
+            assert len(new_values) >= 1, 'Discrete variable must have at least one state'
+            self._values = list(new_values)
+        
+        # Continuous variable
+        elif isinstance(new_values, tuple):
+            assert len(new_values) == 2, "Continuous variable's values must be a tuple of (min, max)"
+            self._values = new_values
+
+        else:
+            raise TypeError(
+                "values must be a list/ndarray (discrete) or tuple(min, max) (continuous)"
+            )
 
 
     def get_state(self, state_set):
