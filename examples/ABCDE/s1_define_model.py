@@ -8,6 +8,7 @@ if repo_root not in sys.path:
 
 from tbnpy import cpt, variable
 import numpy as np
+import torch
 
 import c, oc, e
 
@@ -17,10 +18,10 @@ def define_variables():
     varis = {}
     varis['A'] = variable.Variable(name='A', values=[-0.3, 0.3])
     varis['B'] = variable.Variable(name='B', values=[-0.2, 0.0, 0.2])
-    varis['C'] = variable.Variable(name='C', values='unitless')  # Continuous
-    varis['OC'] = variable.Variable(name='OC', values='unitless')  # Continuous
+    varis['C'] = variable.Variable(name='C', values=(-torch.inf, torch.inf))  # Continuous
+    varis['OC'] = variable.Variable(name='OC', values=(-torch.inf, torch.inf))  # Continuous
     varis['D'] = variable.Variable(name='D', values=[0, 1])      # Binary
-    varis['E'] = variable.Variable(name='E', values='unitless')  # Continuous
+    varis['E'] = variable.Variable(name='E', values=(-torch.inf, torch.inf))  # Continuous
 
     return varis
 

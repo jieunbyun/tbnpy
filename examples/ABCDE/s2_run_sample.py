@@ -244,7 +244,7 @@ if __name__ == "__main__":
     evidence = define_evidence(n_evi=n_evi)
 
     n_chain = 100
-    n_iter = 100_000
+    n_iter = 30_000
     burnin = 200
 
     query_varis = {v: varis[v] for v in ['A', 'B', 'C', 'OC']} # only infer OC's ancestors
