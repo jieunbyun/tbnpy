@@ -13,7 +13,7 @@ def is_discrete(var) -> bool:
     return isinstance(var.values, list)
 
 def is_continuous(var) -> bool:
-    return isinstance(var.values, str)
+    return isinstance(var.values, tuple)
 
 def num_categories(var) -> int:
     assert is_discrete(var)
