@@ -1,6 +1,6 @@
 
-ABCDE example: mixed discrete–continuous Bayesian network
-=========================================================
+ABCDE example
+==============
 
 This example demonstrates how **TBN** performs inference on a Bayesian
 network that combines **discrete and continuous variables**, using
@@ -22,14 +22,77 @@ The Bayesian network consists of six variables:
 - **D**: binary
 - **E**: continuous, deterministic function of *(C, D)*
 
-The dependency structure is:
+The BN graph is:
 
-- A, B → C
-- C → OC
-- C, D → E
+.. image:: ../_static/ABCDE_bngraph.png
+   :alt: ABCDE example's BN graph
+   :align: center
+   :width: 300px
 
-Variables **A**, **B**, and **C** are treated as latent, while **OC**
-is observed.
+**OC** is shaded as an observed variable.
+
+Task
+----
+
+Given multiple noisy observations of **OC**, the task is to infer the
+posterior distributions of **A**, **B**, and **C**,
+i.e. :math:`p(A, B, C \mid OC=\text{evidence})`.
+
+Step 0: Define custom variables and probability distributions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**A**, **B**, and **D** are discrete, tractable (i.e. small state-space) variables,
+so they use built-in CPT classes.
+
+**C**, **OC**, and **E** are continuous (or non-tabular) variables, requiring custom
+probability models:
+
+- **C | A, B**: Gaussian distribution with mean and variance depending on the
+  discrete parents *(A, B)*:
+
+  .. literalinclude:: ../../../examples/ABCDE/c.py
+     :language: python
+     :linenos:
+
+- **OC | C**: Noisy observation model with Gaussian noise:
+
+  .. literalinclude:: ../../../examples/ABCDE/oc.py
+     :language: python
+     :linenos:
+
+- **E | C, D**: Deterministic relation defined by a function:
+
+  .. literalinclude:: ../../../examples/ABCDE/e.py
+     :language: python
+     :linenos:
+
+Important notes
+^^^^^^^^^^^^^^^
+
+A custom probability model class should include (at minimum) the following methods:
+
+1. ``__init__`` defines core properties such as ``childs``, ``parents``, and ``device``
+   (``cpu`` or ``gpu``). Additional properties may be added as needed.
+
+2. ``sample`` generates samples of child variables conditioned on given samples of
+   the parent nodes.
+
+   - Inputs: ``self`` and ``Cs_pars``, where ``Cs_pars`` is a tensor of shape
+     ``(num_samples, num_parents)`` storing realisations of the parent variables.
+   - Returns:
+     - **(recommended)** a tensor of child samples of shape ``(num_samples, num_childs)``
+     - a tensor of log-probabilities of shape ``(num_samples,)`` for the generated samples
+
+3. ``log_prob`` computes the log-probability of given samples.
+
+   - Inputs: ``self`` and ``Cs``, where ``Cs`` is a tensor of shape
+     ``(num_samples, num_childs + num_parents)`` storing realisations of both
+     child (first) and parent (second) variables.
+   - Returns: a tensor of shape ``(num_samples,)`` storing log-probabilities.
+
+All methods should be compatible with both CPU and GPU tensors and should use
+PyTorch tensor operations for efficiency.
+
 
 Step 1: defining variables and probability models
 -------------------------------------------------

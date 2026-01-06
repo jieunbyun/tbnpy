@@ -1,0 +1,13 @@
+{
+  "tests/test_cpt.py::test_init6": true,
+  "tests/test_variable.py::test_Bst_to_Bvec1": true,
+  "tests/test_cpt.py::test_expand_and_check_compatibility_dict_cpt2": true,
+  "tests/test_conn_5edge_eq_2source.py::test_define_variables1": true,
+  "tests/test_conn_5edge_eq_2source.py::test_quantify_magnitudes1": true,
+  "tests/test_inference.py::test_find_ancestor_order1": true,
+  "tests/test_inference.py::test_find_ancestor_order2": true,
+  "tests/test_inference.py::test_find_ancestor_order3": true,
+  "tests/test_inference.py::test_find_ancestor_order4": true,
+  "tests/test_inference.py::test_sample1": true,
+  "tests/test_inference.py::test_sample2": true
+}
