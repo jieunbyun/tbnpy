@@ -3,11 +3,12 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="tbnpy.variable module" href="tbnpy.variable.html"><link rel="prev" title="tbnpy" href="modules.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="tbnpy.variable" href="tbnpy.variable.html"><link rel="prev" title="tbnpy" href="modules.html">
+        <link rel="canonical" href="https://jieunbyun.github.io/tbnpy/api/tbnpy.html">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>tbnpy package - tbnpy 0.1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -196,10 +197,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/repo_structure.html">Repository structure</a></li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">tbnpy</a><input aria-label="Toggle navigation of tbnpy" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current has-children current-page"><a class="current reference internal" href="#">tbnpy package</a><input aria-label="Toggle navigation of tbnpy package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html">tbnpy.cpt module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html">tbnpy.inference module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html">tbnpy.adaptiveMH module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="custom_probability_models.html">Custom probability models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html">tbnpy.cpt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html">tbnpy.inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html">tbnpy.adaptiveMH</a></li>
 </ul>
 </li>
 </ul>
@@ -249,81 +251,130 @@
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable"><code class="docutils literal notranslate"><span class="pre">Variable</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.build_bitmask_to_state_lookup"><code class="docutils literal notranslate"><span class="pre">Variable.build_bitmask_to_state_lookup()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.build_state_to_binary_lookup"><code class="docutils literal notranslate"><span class="pre">Variable.build_state_to_binary_lookup()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.get_Cbin_to_Cst"><code class="docutils literal notranslate"><span class="pre">Variable.get_Cbin_to_Cst()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.get_Cst_to_Cbin"><code class="docutils literal notranslate"><span class="pre">Variable.get_Cst_to_Cbin()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.get_set"><code class="docutils literal notranslate"><span class="pre">Variable.get_set()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.get_state"><code class="docutils literal notranslate"><span class="pre">Variable.get_state()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.get_state_from_vector"><code class="docutils literal notranslate"><span class="pre">Variable.get_state_from_vector()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.name"><code class="docutils literal notranslate"><span class="pre">Variable.name</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#tbnpy.variable.Variable.values"><code class="docutils literal notranslate"><span class="pre">Variable.values</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.variable.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.variable.html#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.variable.html#public-api">Public API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html#variable">Variable</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.variable.html#Variable"><code class="docutils literal notranslate"><span class="pre">Variable</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.variable.html#properties">Properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.variable.html#composite-state-helpers">Composite-state helpers</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tbnpy.cpt.html">tbnpy.cpt module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt"><code class="docutils literal notranslate"><span class="pre">Cpt</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.childs"><code class="docutils literal notranslate"><span class="pre">Cpt.childs</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.parents"><code class="docutils literal notranslate"><span class="pre">Cpt.parents</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.C"><code class="docutils literal notranslate"><span class="pre">Cpt.C</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.p"><code class="docutils literal notranslate"><span class="pre">Cpt.p</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.Cs"><code class="docutils literal notranslate"><span class="pre">Cpt.Cs</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.ps"><code class="docutils literal notranslate"><span class="pre">Cpt.ps</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#id0"><code class="docutils literal notranslate"><span class="pre">Cpt.C</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#id1"><code class="docutils literal notranslate"><span class="pre">Cpt.Cs</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#id2"><code class="docutils literal notranslate"><span class="pre">Cpt.childs</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.device"><code class="docutils literal notranslate"><span class="pre">Cpt.device</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.evidence</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.expand_and_check_compatibility"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.expand_and_check_compatibility_all"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility_all()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.log_prob"><code class="docutils literal notranslate"><span class="pre">Cpt.log_prob()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.log_prob_evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.log_prob_evidence()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#id3"><code class="docutils literal notranslate"><span class="pre">Cpt.p</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#id4"><code class="docutils literal notranslate"><span class="pre">Cpt.parents</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#id5"><code class="docutils literal notranslate"><span class="pre">Cpt.ps</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.sample"><code class="docutils literal notranslate"><span class="pre">Cpt.sample()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.sample_evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.sample_evidence()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.Cpt.sample_from_p_exp"><code class="docutils literal notranslate"><span class="pre">Cpt.sample_from_p_exp()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.variable.html#hidden-helpers-intentionally-omitted">Hidden helpers (intentionally omitted)</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.cpt.html#tbnpy.cpt.get_names"><code class="docutils literal notranslate"><span class="pre">get_names()</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="custom_probability_models.html">Custom probability models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="custom_probability_models.html#when-to-use-cpt-vs-custom-models">When to use CPT vs custom models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_probability_models.html#minimal-interface">Minimal interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="custom_probability_models.html#prob.sample"><code class="docutils literal notranslate"><span class="pre">prob.sample()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="custom_probability_models.html#prob.log_prob"><code class="docutils literal notranslate"><span class="pre">prob.log_prob()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tbnpy.inference.html">tbnpy.inference module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#tbnpy.inference.get_ancestor_order"><code class="docutils literal notranslate"><span class="pre">get_ancestor_order()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#tbnpy.inference.sample"><code class="docutils literal notranslate"><span class="pre">sample()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#tbnpy.inference.sample_evidence"><code class="docutils literal notranslate"><span class="pre">sample_evidence()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#tbnpy.inference.sample_evidence_v0"><code class="docutils literal notranslate"><span class="pre">sample_evidence_v0()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_probability_models.html#device-and-performance-notes">Device and performance notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="custom_probability_models.html#examples-in-the-abcde-tutorial">Examples in the ABCDE tutorial</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="tbnpy.adaptiveMH.html">tbnpy.adaptiveMH module</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.AdaptConfig"><code class="docutils literal notranslate"><span class="pre">AdaptConfig</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.AdaptConfig.alpha"><code class="docutils literal notranslate"><span class="pre">AdaptConfig.alpha</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.AdaptConfig.burnin"><code class="docutils literal notranslate"><span class="pre">AdaptConfig.burnin</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.AdaptConfig.gamma"><code class="docutils literal notranslate"><span class="pre">AdaptConfig.gamma</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.AdaptConfig.max_log_sigma"><code class="docutils literal notranslate"><span class="pre">AdaptConfig.max_log_sigma</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.AdaptConfig.min_log_sigma"><code class="docutils literal notranslate"><span class="pre">AdaptConfig.min_log_sigma</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.AdaptConfig.target_accept"><code class="docutils literal notranslate"><span class="pre">AdaptConfig.target_accept</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="tbnpy.cpt.html">tbnpy.cpt</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.cpt.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.cpt.html#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.cpt.html#public-api">Public API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#cpt">Cpt</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.cpt.html#Cpt"><code class="docutils literal notranslate"><span class="pre">Cpt</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.cpt.html#core-data-structures">Core data structures</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.cpt.html#evidence">Evidence</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.cpt.html#sampling">Sampling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.cpt.html#log-probability-evaluation">Log-probability evaluation</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.HybridAdaptiveMH"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.HybridAdaptiveMH.init_state_from_forward_samples"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.init_state_from_forward_samples()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.HybridAdaptiveMH.init_state_random"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.init_state_random()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.HybridAdaptiveMH.mh_update_block"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.mh_update_block()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.HybridAdaptiveMH.run"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.run()</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.build_Cs_3d"><code class="docutils literal notranslate"><span class="pre">build_Cs_3d()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.build_factors_by_var"><code class="docutils literal notranslate"><span class="pre">build_factors_by_var()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.factor_logp_2d"><code class="docutils literal notranslate"><span class="pre">factor_logp_2d()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.is_continuous"><code class="docutils literal notranslate"><span class="pre">is_continuous()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.is_discrete"><code class="docutils literal notranslate"><span class="pre">is_discrete()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.num_categories"><code class="docutils literal notranslate"><span class="pre">num_categories()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.propose_continuous_rw_gaussian"><code class="docutils literal notranslate"><span class="pre">propose_continuous_rw_gaussian()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#tbnpy.adaptiveMH.propose_discrete_adaptive"><code class="docutils literal notranslate"><span class="pre">propose_discrete_adaptive()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.cpt.html#advanced-internal-helpers">Advanced / internal helpers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#Cpt._get_C_binary"><code class="docutils literal notranslate"><span class="pre">Cpt._get_C_binary()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#Cpt.expand_and_check_compatibility"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#Cpt.expand_and_check_compatibility_all"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility_all()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.cpt.html#utility-functions">Utility functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html#get_names"><code class="docutils literal notranslate"><span class="pre">get_names()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tbnpy.inference.html">tbnpy.inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#glossary">Glossary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#quick-start">Quick start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.inference.html#public-api">Public API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html#topological-utilities">Topological utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.inference.html#get_ancestor_order"><code class="docutils literal notranslate"><span class="pre">get_ancestor_order()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html#forward-sampling-without-evidence">Forward sampling without evidence</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.inference.html#sample"><code class="docutils literal notranslate"><span class="pre">sample()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html#forward-sampling-with-evidence">Forward sampling with evidence</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.inference.html#sample_evidence_v0"><code class="docutils literal notranslate"><span class="pre">sample_evidence_v0()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.inference.html#sample_evidence"><code class="docutils literal notranslate"><span class="pre">sample_evidence()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tbnpy.adaptiveMH.html">tbnpy.adaptiveMH</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#glossary">Glossary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#utility-functions">Utility functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#variable-type-helpers">Variable type helpers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#is_discrete"><code class="docutils literal notranslate"><span class="pre">is_discrete()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#is_continuous"><code class="docutils literal notranslate"><span class="pre">is_continuous()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#num_categories"><code class="docutils literal notranslate"><span class="pre">num_categories()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#factor-construction-utilities">Factor construction utilities</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#build_Cs_3d"><code class="docutils literal notranslate"><span class="pre">build_Cs_3d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#factor_logp_2d"><code class="docutils literal notranslate"><span class="pre">factor_logp_2d()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#build_factors_by_var"><code class="docutils literal notranslate"><span class="pre">build_factors_by_var()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#proposal-kernels">Proposal kernels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#discrete-proposals">Discrete proposals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#propose_discrete_adaptive"><code class="docutils literal notranslate"><span class="pre">propose_discrete_adaptive()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#continuous-proposals">Continuous proposals</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#propose_continuous_rw_gaussian"><code class="docutils literal notranslate"><span class="pre">propose_continuous_rw_gaussian()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#adaptation-configuration">Adaptation configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#AdaptConfig"><code class="docutils literal notranslate"><span class="pre">AdaptConfig</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tbnpy.adaptiveMH.html#hybridadaptivemh">HybridAdaptiveMH</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#HybridAdaptiveMH"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#initialisation">Initialisation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#HybridAdaptiveMH.init_state_from_forward_samples"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.init_state_from_forward_samples()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#HybridAdaptiveMH.init_state_random"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.init_state_random()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#core-mcmc-update">Core MCMC update</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#HybridAdaptiveMH.mh_update_block"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.mh_update_block()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html#running-the-sampler">Running the sampler</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="tbnpy.adaptiveMH.html#HybridAdaptiveMH.run"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -344,7 +395,7 @@
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">tbnpy.variable module</div>
+                <div class="title">tbnpy.variable</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
@@ -404,8 +455,8 @@
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=01f34227"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

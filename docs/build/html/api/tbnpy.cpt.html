@@ -3,11 +3,12 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="tbnpy.inference module" href="tbnpy.inference.html"><link rel="prev" title="tbnpy.variable module" href="tbnpy.variable.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="tbnpy.inference" href="tbnpy.inference.html"><link rel="prev" title="Custom probability models" href="custom_probability_models.html">
+        <link rel="canonical" href="https://jieunbyun.github.io/tbnpy/api/tbnpy.cpt.html">
 
-    <!-- Generated with Sphinx 8.2.3 and Furo 2025.12.19 -->
-        <title>tbnpy.cpt module - tbnpy 0.1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>tbnpy.cpt - tbnpy 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=acfd86a5" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -196,10 +197,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../getting_started/repo_structure.html">Repository structure</a></li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">tbnpy</a><input aria-label="Toggle navigation of tbnpy" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
 <li class="toctree-l2 current has-children"><a class="reference internal" href="tbnpy.html">tbnpy package</a><input aria-label="Toggle navigation of tbnpy package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable module</a></li>
-<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">tbnpy.cpt module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html">tbnpy.inference module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html">tbnpy.adaptiveMH module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="custom_probability_models.html">Custom probability models</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">tbnpy.cpt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html">tbnpy.inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html">tbnpy.adaptiveMH</a></li>
 </ul>
 </li>
 </ul>
@@ -243,251 +245,335 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="module-tbnpy.cpt">
-<span id="tbnpy-cpt-module"></span><h1>tbnpy.cpt module<a class="headerlink" href="#module-tbnpy.cpt" title="Link to this heading">¶</a></h1>
+          <section id="tbnpy-cpt">
+<h1>tbnpy.cpt<a class="headerlink" href="#tbnpy-cpt" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>The <code class="xref py py-class docutils literal notranslate"><span class="pre">Cpt</span></code> class stores a <strong>conditional probability tensor</strong> (CPT) in an
+<em>event-table</em> form:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">C</span></code>: an event matrix whose rows enumerate compatible assignments of
+<code class="docutils literal notranslate"><span class="pre">childs</span> <span class="pre">+</span> <span class="pre">parents</span></code> (stored as <strong>composite-state indices</strong> for each variable).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">p</span></code>: probabilities for each row/event in <code class="docutils literal notranslate"><span class="pre">C</span></code>.</p></li>
+</ul>
+<p>It also supports sampling and log-probability evaluation, including cases where parent
+assignments are provided as samples (optionally aligned with multiple evidence rows).</p>
+</section>
+<section id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">tbnpy.variable</span> <span class="kn">import</span> <span class="n">Variable</span>
+<span class="kn">from</span> <span class="nn">tbnpy.cpt</span> <span class="kn">import</span> <span class="n">Cpt</span>
+
+<span class="c1"># Define variables (discrete example)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;X&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">])</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="s2">&quot;Y&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">])</span>
+
+<span class="c1"># Event table for P(X | Y) with two events per value of Y (toy example)</span>
+<span class="c1"># Columns are [childs | parents] = [X | Y]</span>
+<span class="n">C</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># X=0, Y=0</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># X=1, Y=0</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># X=0, Y=1</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># X=1, Y=1</span>
+<span class="p">]</span>
+<span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">]</span>  <span class="c1"># probabilities for each row in C</span>
+
+<span class="n">cpt</span> <span class="o">=</span> <span class="n">Cpt</span><span class="p">(</span><span class="n">childs</span><span class="o">=</span><span class="p">[</span><span class="n">X</span><span class="p">],</span> <span class="n">parents</span><span class="o">=</span><span class="p">[</span><span class="n">Y</span><span class="p">],</span> <span class="n">C</span><span class="o">=</span><span class="n">C</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="n">p</span><span class="p">)</span>
+
+<span class="c1"># Sample X given parent samples Y</span>
+<span class="n">Cs_par</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">]])</span>  <span class="c1"># three parent samples: Y=0,1,1</span>
+<span class="n">Cs_child</span><span class="p">,</span> <span class="n">logp</span> <span class="o">=</span> <span class="n">cpt</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">Cs_pars</span><span class="o">=</span><span class="n">Cs_par</span><span class="p">)</span>
+
+<span class="c1"># Evaluate log probability of full samples [X,Y]</span>
+<span class="n">Cs_full</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+<span class="n">logp_full</span> <span class="o">=</span> <span class="n">cpt</span><span class="o">.</span><span class="n">log_prob</span><span class="p">(</span><span class="n">Cs_full</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="public-api">
+<h2>Public API<a class="headerlink" href="#public-api" title="Link to this heading">¶</a></h2>
+<section id="cpt">
+<h3>Cpt<a class="headerlink" href="#cpt" title="Link to this heading">¶</a></h3>
 <dl class="py class">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">tbnpy.cpt.</span></span><span class="sig-name descname"><span class="pre">Cpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">childs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt" title="Link to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Defines the conditional probability Tensor (CPT).
-CPT is based on the same concept as CPM in Ref: Byun et al. (2019). Matrix-based Bayesian Network for
-efficient memory storage and flexible inference.
-Reliability Engineering &amp; System Safety, 185, 533-545.
-The only different is it’s based on tensor operation, using pytorch.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.childs">
-<span class="sig-name descname"><span class="pre">childs</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.childs" title="Link to this definition">¶</a></dt>
-<dd><p>list of instances of Variable objects.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list</p>
+<dt class="sig sig-object py" id="Cpt">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Cpt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">childs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Cpt" title="Link to this definition">¶</a></dt>
+<dd><p>Defines a conditional probability tensor (CPT) using tensor operations (PyTorch).</p>
+<section id="parameters">
+<h4>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h4>
+<dl>
+<dt>childs</dt><dd><p>List of <code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code> instances treated as the <strong>child</strong> variables.</p>
+</dd>
+<dt>parents</dt><dd><p>List of <code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code> instances treated as the <strong>parent</strong> variables.</p>
+</dd>
+<dt>C</dt><dd><p>Event matrix (rows = events; columns = <code class="docutils literal notranslate"><span class="pre">childs</span> <span class="pre">+</span> <span class="pre">parents</span></code>) storing <strong>composite-state indices</strong>.</p>
+<p>Accepted input types:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">list</span></code> (nested)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p></li>
+</ul>
+<p>Stored as <code class="docutils literal notranslate"><span class="pre">torch.int64</span></code>.</p>
+</dd>
+<dt>p</dt><dd><p>Probability vector aligned with rows of <code class="docutils literal notranslate"><span class="pre">C</span></code> (same number of rows).</p>
+<p>Accepted input types:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">list</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">torch.Tensor</span></code></p></li>
+</ul>
+<p>Stored as <code class="docutils literal notranslate"><span class="pre">torch.float32</span></code>. If provided as 1D, it is reshaped to a column <code class="docutils literal notranslate"><span class="pre">(n_events,</span> <span class="pre">1)</span></code>.</p>
+</dd>
+<dt>Cs</dt><dd><p>Stored samples of assignments (optional). See <code class="xref py py-meth docutils literal notranslate"><span class="pre">sample()</span></code> and
+<code class="xref py py-meth docutils literal notranslate"><span class="pre">sample_evidence()</span></code>.</p>
+</dd>
+<dt>ps</dt><dd><p>Stored sampling probabilities/log-probabilities (optional).</p>
+</dd>
+<dt>evidence</dt><dd><p>Observations of the child variables (optional). See <code class="xref py py-attr docutils literal notranslate"><span class="pre">evidence</span></code>.</p>
+</dd>
+<dt>device</dt><dd><p>Torch device specifier (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;cpu&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;cuda&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">torch.device(...)</span></code>).</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.parents">
-<span class="sig-name descname"><span class="pre">parents</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.parents" title="Link to this definition">¶</a></dt>
-<dd><p>list of instances of Variable objects.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>list</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.C">
-<span class="sig-name descname"><span class="pre">C</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.C" title="Link to this definition">¶</a></dt>
-<dd><p>event matrix.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>array_like</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.p">
-<span class="sig-name descname"><span class="pre">p</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.p" title="Link to this definition">¶</a></dt>
-<dd><p>probability vector for the events of corresponding rows in C.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>array_like</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.Cs">
-<span class="sig-name descname"><span class="pre">Cs</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.Cs" title="Link to this definition">¶</a></dt>
-<dd><p>event matrix of samples.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>array_like</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.ps">
-<span class="sig-name descname"><span class="pre">ps</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.ps" title="Link to this definition">¶</a></dt>
-<dd><p>sampling probability vector for the events of corresponding rows in Cs.
-NOTE: log probabilities are stored in ps.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>array_like</p>
-</dd>
-</dl>
-</dd></dl>
-
-<p class="rubric">Notes</p>
-<p>C and p have the same number of rows.
-Cs and ps have the same number of rows.</p>
-<dl class="py property">
-<dt class="sig sig-object py" id="id0">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">C</span></span><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="id1">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Cs</span></span><a class="headerlink" href="#id1" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="id2">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">childs</span></span><a class="headerlink" href="#id2" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.device">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.device" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.evidence">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">evidence</span></span><a class="headerlink" href="#tbnpy.cpt.Cpt.evidence" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.expand_and_check_compatibility">
-<span class="sig-name descname"><span class="pre">expand_and_check_compatibility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">C_binary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt.expand_and_check_compatibility"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt.expand_and_check_compatibility" title="Link to this definition">¶</a></dt>
-<dd><p>C_binary: (n_event, n_var, max_state)
-samples:  (n_sample, n_parents, max_par_state)
-p:        (n_event,) OR (n_event, 1)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>(n_sample, n_event) with incompatible event-sample pairs set to zero.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>p_exp</p>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>Cb_exp:   (n_event, n_sample, n_var, max_global_state)
-Sm_exp:   (n_event, n_sample, n_parents, max_global_state)
-mask:     (n_sample, n_event) 1 if compatible, 0 otherwise</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.expand_and_check_compatibility_all">
-<span class="sig-name descname"><span class="pre">expand_and_check_compatibility_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">C_binary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples_binary</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt.expand_and_check_compatibility_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt.expand_and_check_compatibility_all" title="Link to this definition">¶</a></dt>
-<dd><p>Generic compatibility check that treats ALL variables uniformly.
-Unlike expand_and_check_compatibility, this function does not
-distinguish between child and parent variables.</p>
-<p>C_binary:       (n_event,  n_vars, max_state)
-samples_binary: (n_sample, n_vars, max_state)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><dl class="simple">
-<dt>(n_sample, n_event)</dt><dd><p>event probabilities with incompatible pairs zeroed.</p>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>p_exp</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.log_prob">
-<span class="sig-name descname"><span class="pre">log_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Cs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt.log_prob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt.log_prob" title="Link to this definition">¶</a></dt>
-<dd><p>Computes log P(sample | parents) for each row of Cs.
-Cs is arranged in the same order as self.variables = childs + parents.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.log_prob_evidence">
-<span class="sig-name descname"><span class="pre">log_prob_evidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Cs_par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt.log_prob_evidence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt.log_prob_evidence" title="Link to this definition">¶</a></dt>
-<dd><p>Compute log P(evidence | parents(samples)) for each parent sample.</p>
+</section>
+<section id="attributes">
+<h4>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">¶</a></h4>
 <dl class="simple">
-<dt>Cs_par can be:</dt><dd><p>(N_samples, n_parents) or
-(n_evi, N_samples, n_parents)   # evidence exists for parents too</p>
+<dt>childs<span class="classifier">list[Variable]</span></dt><dd><p>Child variables.</p>
+</dd>
+<dt>parents<span class="classifier">list[Variable]</span></dt><dd><p>Parent variables.</p>
+</dd>
+<dt>C<span class="classifier">torch.Tensor</span></dt><dd><p>Event matrix of shape <code class="docutils literal notranslate"><span class="pre">(n_events,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code>.</p>
+</dd>
+<dt>p<span class="classifier">torch.Tensor</span></dt><dd><p>Probability vector of shape <code class="docutils literal notranslate"><span class="pre">(n_events,</span> <span class="pre">1)</span></code> (or sometimes treated as <code class="docutils literal notranslate"><span class="pre">(n_events,)</span></code> internally).</p>
+</dd>
+<dt>Cs<span class="classifier">torch.Tensor</span></dt><dd><p>Sample matrix (shape depends on the sampling mode).</p>
+</dd>
+<dt>ps<span class="classifier">torch.Tensor</span></dt><dd><p>Sampling probabilities (stored as log probabilities in some methods).</p>
+</dd>
+<dt>evidence<span class="classifier">torch.Tensor</span></dt><dd><p>Evidence matrix for child variables, shape <code class="docutils literal notranslate"><span class="pre">(n_evidence,</span> <span class="pre">n_childs)</span></code>.</p>
 </dd>
 </dl>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>(N_samples,) tensor of log probabilities</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>log_probs</p>
-</dd>
-</dl>
+</section>
+<section id="notes">
+<h4>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>For consistency, <code class="docutils literal notranslate"><span class="pre">C</span></code> and <code class="docutils literal notranslate"><span class="pre">Cs</span></code> store <strong>composite-state indices</strong> (not raw basic-state indices).</p></li>
+<li><p>Some internal methods convert composite-state indices to <strong>binary</strong> representations for fast
+compatibility checks. Those helpers are documented at a high level below.</p></li>
+</ul>
+</section>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="id3">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">p</span></span><a class="headerlink" href="#id3" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<section id="core-data-structures">
+<h4>Core data structures<a class="headerlink" href="#core-data-structures" title="Link to this heading">¶</a></h4>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Cpt.C">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">C</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">torch.Tensor</span></span><a class="headerlink" href="#Cpt.C" title="Link to this definition">¶</a></dt>
+<dd><p>Event matrix <code class="docutils literal notranslate"><span class="pre">(n_events,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code> of composite-state indices.</p>
+</dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="id4">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parents</span></span><a class="headerlink" href="#id4" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Cpt.p">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">p</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">torch.Tensor</span></span><a class="headerlink" href="#Cpt.p" title="Link to this definition">¶</a></dt>
+<dd><p>Event probabilities aligned with <code class="docutils literal notranslate"><span class="pre">C</span></code>. Shape is typically <code class="docutils literal notranslate"><span class="pre">(n_events,</span> <span class="pre">1)</span></code>.</p>
+</dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="id5">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ps</span></span><a class="headerlink" href="#id5" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+</section>
+<section id="evidence">
+<h4>Evidence<a class="headerlink" href="#evidence" title="Link to this heading">¶</a></h4>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Cpt.evidence">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">evidence</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">torch.Tensor</span></span><a class="headerlink" href="#Cpt.evidence" title="Link to this definition">¶</a></dt>
+<dd><p>Evidence for the child variables.</p>
+<section id="input-storage-rules">
+<h5>Input / storage rules<a class="headerlink" href="#input-storage-rules" title="Link to this heading">¶</a></h5>
+<ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">None</span></code> or <code class="docutils literal notranslate"><span class="pre">[]</span></code>: stored as an empty tensor of shape <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">n_childs)</span></code>.</p></li>
+<li><p>If there is <strong>one</strong> child variable: accepts evidence of shape <code class="docutils literal notranslate"><span class="pre">(N,)</span></code> or <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">1)</span></code>.</p></li>
+<li><p>If there are <strong>multiple</strong> child variables: evidence must be shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">n_childs)</span></code>.</p></li>
+</ul>
+</section>
+</dd></dl>
 
+</section>
+<section id="sampling">
+<h4>Sampling<a class="headerlink" href="#sampling" title="Link to this heading">¶</a></h4>
 <dl class="py method">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cs_pars</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt.sample" title="Link to this definition">¶</a></dt>
-<dd><p>Samples from this CPT.</p>
+<dt class="sig sig-object py" id="Cpt.sample">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cs_pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100_000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Cpt.sample" title="Link to this definition">¶</a></dt>
+<dd><p>Sample child assignments from this CPT.</p>
+<section id="id1">
+<h5>Parameters<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h5>
 <dl class="simple">
-<dt>Case 1: No parent nodes</dt><dd><p>-&gt; n_sample must be provided
--&gt; returns (n_sample, n_childs)</p>
+<dt>n_sample</dt><dd><p>Number of samples to generate <strong>when there are no parents</strong>.</p>
 </dd>
-<dt>Case 2: With parent nodes</dt><dd><p>-&gt; Cs_pars provided as composite parent samples: (n_samples, n_parents)
--&gt; returns (n_samples, n_childs)</p>
+<dt>Cs_pars</dt><dd><p>Parent samples (composite states) of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">n_parents)</span></code>
+<strong>when parents exist</strong>.</p>
+</dd>
+<dt>batch_size</dt><dd><p>Batch size used to avoid materialising very large intermediate tensors.</p>
 </dd>
 </dl>
-<p>Uses batching to avoid constructing large tensors at once.</p>
+</section>
+<section id="returns">
+<h5>Returns<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h5>
+<dl>
+<dt>(Cs, ps)</dt><dd><p><code class="docutils literal notranslate"><span class="pre">Cs</span></code> is a tensor of sampled child composite states:</p>
+<ul class="simple">
+<li><p>No parents: <code class="docutils literal notranslate"><span class="pre">Cs</span></code> has shape <code class="docutils literal notranslate"><span class="pre">(n_sample,</span> <span class="pre">n_childs)</span></code></p></li>
+<li><p>With parents: <code class="docutils literal notranslate"><span class="pre">Cs</span></code> has shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">n_childs)</span></code> and aligns with rows of <code class="docutils literal notranslate"><span class="pre">Cs_pars</span></code></p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">ps</span></code> stores the <strong>log</strong> probability of the selected event for each sample.</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h5>Notes<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h5>
+<p>When parents exist, sampling is performed by:</p>
+<ol class="arabic simple">
+<li><p>Converting event definitions and parent samples to a binary form;</p></li>
+<li><p>Zeroing out events incompatible with each parent sample; and</p></li>
+<li><p>Sampling an event index from the resulting conditional distribution.</p></li>
+</ol>
+</section>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.sample_evidence">
-<span class="sig-name descname"><span class="pre">sample_evidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Cs_pars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt.sample_evidence"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt.sample_evidence" title="Link to this definition">¶</a></dt>
-<dd><p>Vectorized sampling given aligned parent evidence.</p>
-<p>Cs_pars: (n_evi, n_samples, n_parents)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>(n_evi, n_samples, n_childs + n_parents)
-ps_out: (n_evi, n_samples)</p>
+<dt class="sig sig-object py" id="Cpt.sample_evidence">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">sample_evidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Cs_pars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100_000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Cpt.sample_evidence" title="Link to this definition">¶</a></dt>
+<dd><p>Sample child assignments when parent samples are <strong>aligned with multiple evidence rows</strong>.</p>
+<section id="id3">
+<h5>Parameters<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h5>
+<dl class="simple">
+<dt>Cs_pars</dt><dd><p>Parent samples arranged per evidence row, shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_samples,</span> <span class="pre">n_parents)</span></code>.</p>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Cs_out</p>
+<dt>batch_size</dt><dd><p>Batch size for internal computations.</p>
 </dd>
 </dl>
+</section>
+<section id="id4">
+<h5>Returns<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h5>
+<dl>
+<dt>(Cs_out, ps_out)</dt><dd><p><code class="docutils literal notranslate"><span class="pre">Cs_out</span></code> has shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_samples,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code>,
+storing <code class="docutils literal notranslate"><span class="pre">[childs</span> <span class="pre">|</span> <span class="pre">parents]</span></code> for each evidence row and parent sample.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ps_out</span></code> has shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_samples)</span></code> and contains log probabilities.</p>
+</dd>
+</dl>
+</section>
+<section id="id5">
+<h5>Notes<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h5>
+<p>The current module defines <code class="docutils literal notranslate"><span class="pre">sample_evidence</span></code> twice; the <em>second</em> definition (the vectorised version)
+is the one that is effective at runtime.</p>
+</section>
+</dd></dl>
+
+</section>
+<section id="log-probability-evaluation">
+<h4>Log-probability evaluation<a class="headerlink" href="#log-probability-evaluation" title="Link to this heading">¶</a></h4>
+<dl class="py method">
+<dt class="sig sig-object py" id="Cpt.log_prob">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">log_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Cs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100_000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#Cpt.log_prob" title="Link to this definition">¶</a></dt>
+<dd><p>Compute <code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">P(Cs)</span></code> for each row of <code class="docutils literal notranslate"><span class="pre">Cs</span></code> where <code class="docutils literal notranslate"><span class="pre">Cs</span></code> stores assignments in the order
+<code class="docutils literal notranslate"><span class="pre">[childs</span> <span class="pre">|</span> <span class="pre">parents]</span></code>.</p>
+<section id="id6">
+<h5>Parameters<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h5>
+<dl class="simple">
+<dt>Cs</dt><dd><p>Composite-state assignments of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code>.</p>
+</dd>
+<dt>batch_size</dt><dd><p>Batch size for internal compatibility checks.</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h5>Returns<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h5>
+<dl class="simple">
+<dt>torch.Tensor</dt><dd><p>Log probabilities of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,)</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h5>Notes<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h5>
+<p>This method treats <strong>all variables uniformly</strong> when checking compatibility against the event table.</p>
+</section>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="tbnpy.cpt.Cpt.sample_from_p_exp">
-<span class="sig-name descname"><span class="pre">sample_from_p_exp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p_exp</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#Cpt.sample_from_p_exp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.Cpt.sample_from_p_exp" title="Link to this definition">¶</a></dt>
-<dd><p>p_exp: (n_samples, n_events) probability matrix (not normalized)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>(n_samples, n_childs) sampled child composite states
-event_idx: (n_samples,) sampled event indices</p>
+<dt class="sig sig-object py" id="Cpt.log_prob_evidence">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">log_prob_evidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Cs_par</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100_000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#Cpt.log_prob_evidence" title="Link to this definition">¶</a></dt>
+<dd><p>Compute <code class="docutils literal notranslate"><span class="pre">log</span> <span class="pre">P(evidence</span> <span class="pre">|</span> <span class="pre">parents(samples))</span></code> for each parent sample.</p>
+<section id="id9">
+<h5>Parameters<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h5>
+<dl class="simple">
+<dt>Cs_par</dt><dd><p>Parent samples (composite states). Accepted shapes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">(N_samples,</span> <span class="pre">n_parents)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">N_samples,</span> <span class="pre">n_parents)</span></code> (if evidence exists for parents too)</p></li>
+</ul>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Cs</p>
+<dt>batch_size</dt><dd><p>Batch size for internal computations.</p>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
-<p>C: (n_events, n_vars) stored in self.C
-n_childs: number of child variables</p>
+</section>
+<section id="id10">
+<h5>Returns<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h5>
+<dl class="simple">
+<dt>torch.Tensor</dt><dd><p>Log probabilities of shape <code class="docutils literal notranslate"><span class="pre">(N_samples,)</span></code>.</p>
+</dd>
+</dl>
+</section>
 </dd></dl>
 
+</section>
+</section>
+</section>
+<section id="advanced-internal-helpers">
+<h2>Advanced / internal helpers<a class="headerlink" href="#advanced-internal-helpers" title="Link to this heading">¶</a></h2>
+<p>The following methods are primarily implementation details used to speed up sampling/inference.
+You may document them later if you decide they are part of the public API.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Cpt._get_C_binary">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">_get_C_binary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Cpt._get_C_binary" title="Link to this definition">¶</a></dt>
+<dd><p>Convert the event matrix <code class="docutils literal notranslate"><span class="pre">C</span></code> into a padded binary tensor of shape
+<code class="docutils literal notranslate"><span class="pre">(n_events,</span> <span class="pre">n_vars,</span> <span class="pre">max_basic)</span></code> for vectorised compatibility checks.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="Cpt.expand_and_check_compatibility">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">expand_and_check_compatibility</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">C_binary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Cpt.expand_and_check_compatibility" title="Link to this definition">¶</a></dt>
+<dd><p>Parent-aware compatibility filtering used by <code class="xref py py-meth docutils literal notranslate"><span class="pre">sample()</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Cpt.expand_and_check_compatibility_all">
+<span class="sig-prename descclassname"><span class="pre">Cpt.</span></span><span class="sig-name descname"><span class="pre">expand_and_check_compatibility_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">C_binary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples_binary</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Cpt.expand_and_check_compatibility_all" title="Link to this definition">¶</a></dt>
+<dd><p>Compatibility filtering that treats all variables uniformly, used by <code class="xref py py-meth docutils literal notranslate"><span class="pre">log_prob()</span></code>.</p>
+</dd></dl>
+
+</section>
+<section id="utility-functions">
+<h2>Utility functions<a class="headerlink" href="#utility-functions" title="Link to this heading">¶</a></h2>
 <dl class="py function">
-<dt class="sig sig-object py" id="tbnpy.cpt.get_names">
-<span class="sig-prename descclassname"><span class="pre">tbnpy.cpt.</span></span><span class="sig-name descname"><span class="pre">get_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/tbnpy/cpt.html#get_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#tbnpy.cpt.get_names" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="get_names">
+<span class="sig-name descname"><span class="pre">get_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#get_names" title="Link to this definition">¶</a></dt>
+<dd><p>Return the list of <code class="docutils literal notranslate"><span class="pre">.name</span></code> for variables in <code class="docutils literal notranslate"><span class="pre">var_list</span></code>.</p>
+<section id="id11">
+<h3>Parameters<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>var_list</dt><dd><p>List of <code class="xref py py-class docutils literal notranslate"><span class="pre">Variable</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id12">
+<h3>Returns<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>list[str]</dt><dd><p>Names of the variables.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
 
+</section>
 </section>
 
         </article>
@@ -500,18 +586,18 @@ n_childs: number of child variables</p>
                 <div class="context">
                   <span>Next</span>
                 </div>
-                <div class="title">tbnpy.inference module</div>
+                <div class="title">tbnpy.inference</div>
               </div>
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
             </a>
-          <a class="prev-page" href="tbnpy.variable.html">
+          <a class="prev-page" href="custom_probability_models.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
                 <div class="context">
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">tbnpy.variable module</div>
+                <div class="title">Custom probability models</div>
                 
               </div>
             </a>
@@ -545,32 +631,45 @@ n_childs: number of child variables</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">tbnpy.cpt module</a><ul>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt"><code class="docutils literal notranslate"><span class="pre">Cpt</span></code></a><ul>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.childs"><code class="docutils literal notranslate"><span class="pre">Cpt.childs</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.parents"><code class="docutils literal notranslate"><span class="pre">Cpt.parents</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.C"><code class="docutils literal notranslate"><span class="pre">Cpt.C</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.p"><code class="docutils literal notranslate"><span class="pre">Cpt.p</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.Cs"><code class="docutils literal notranslate"><span class="pre">Cpt.Cs</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.ps"><code class="docutils literal notranslate"><span class="pre">Cpt.ps</span></code></a></li>
-<li><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">Cpt.C</span></code></a></li>
-<li><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">Cpt.Cs</span></code></a></li>
-<li><a class="reference internal" href="#id2"><code class="docutils literal notranslate"><span class="pre">Cpt.childs</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.device"><code class="docutils literal notranslate"><span class="pre">Cpt.device</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.evidence</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.expand_and_check_compatibility"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility()</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.expand_and_check_compatibility_all"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility_all()</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.log_prob"><code class="docutils literal notranslate"><span class="pre">Cpt.log_prob()</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.log_prob_evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.log_prob_evidence()</span></code></a></li>
-<li><a class="reference internal" href="#id3"><code class="docutils literal notranslate"><span class="pre">Cpt.p</span></code></a></li>
-<li><a class="reference internal" href="#id4"><code class="docutils literal notranslate"><span class="pre">Cpt.parents</span></code></a></li>
-<li><a class="reference internal" href="#id5"><code class="docutils literal notranslate"><span class="pre">Cpt.ps</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.sample"><code class="docutils literal notranslate"><span class="pre">Cpt.sample()</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.sample_evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.sample_evidence()</span></code></a></li>
-<li><a class="reference internal" href="#tbnpy.cpt.Cpt.sample_from_p_exp"><code class="docutils literal notranslate"><span class="pre">Cpt.sample_from_p_exp()</span></code></a></li>
+<li><a class="reference internal" href="#">tbnpy.cpt</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#quick-start">Quick start</a></li>
+<li><a class="reference internal" href="#public-api">Public API</a><ul>
+<li><a class="reference internal" href="#cpt">Cpt</a><ul>
+<li><a class="reference internal" href="#Cpt"><code class="docutils literal notranslate"><span class="pre">Cpt</span></code></a></li>
+<li><a class="reference internal" href="#core-data-structures">Core data structures</a><ul>
+<li><a class="reference internal" href="#Cpt.C"><code class="docutils literal notranslate"><span class="pre">Cpt.C</span></code></a></li>
+<li><a class="reference internal" href="#Cpt.p"><code class="docutils literal notranslate"><span class="pre">Cpt.p</span></code></a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#tbnpy.cpt.get_names"><code class="docutils literal notranslate"><span class="pre">get_names()</span></code></a></li>
+<li><a class="reference internal" href="#evidence">Evidence</a><ul>
+<li><a class="reference internal" href="#Cpt.evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.evidence</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sampling">Sampling</a><ul>
+<li><a class="reference internal" href="#Cpt.sample"><code class="docutils literal notranslate"><span class="pre">Cpt.sample()</span></code></a></li>
+<li><a class="reference internal" href="#Cpt.sample_evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.sample_evidence()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#log-probability-evaluation">Log-probability evaluation</a><ul>
+<li><a class="reference internal" href="#Cpt.log_prob"><code class="docutils literal notranslate"><span class="pre">Cpt.log_prob()</span></code></a></li>
+<li><a class="reference internal" href="#Cpt.log_prob_evidence"><code class="docutils literal notranslate"><span class="pre">Cpt.log_prob_evidence()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#advanced-internal-helpers">Advanced / internal helpers</a><ul>
+<li><a class="reference internal" href="#Cpt._get_C_binary"><code class="docutils literal notranslate"><span class="pre">Cpt._get_C_binary()</span></code></a></li>
+<li><a class="reference internal" href="#Cpt.expand_and_check_compatibility"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility()</span></code></a></li>
+<li><a class="reference internal" href="#Cpt.expand_and_check_compatibility_all"><code class="docutils literal notranslate"><span class="pre">Cpt.expand_and_check_compatibility_all()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#utility-functions">Utility functions</a><ul>
+<li><a class="reference internal" href="#get_names"><code class="docutils literal notranslate"><span class="pre">get_names()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -583,8 +682,8 @@ n_childs: number of child variables</p>
     </aside>
   </div>
 </div><script src="../_static/documentation_options.js?v=01f34227"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
     </body>
 </html>

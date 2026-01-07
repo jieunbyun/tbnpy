@@ -7,7 +7,7 @@ The library enables scalable probabilistic reasoning for complex infrastructure
 and engineering systems, where conventional Bayesian network implementations
 become computationally limiting.
 
-## Why TBNpy?
+## TBNPy: Python toolkit for tensor-based Bayesian network (TBN)
 
 Bayesian network is a powerful framework for probabilistic reasoning under uncertainty.
 However, traditional implementations often struggle with:

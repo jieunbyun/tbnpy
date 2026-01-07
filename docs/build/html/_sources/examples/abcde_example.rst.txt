@@ -99,15 +99,15 @@ Step 1: defining variables and probability models
 
 The file ``s1_define_model.py`` defines:
 
-1. Variable domains (discrete vs. continuous)
+1. Variables (discrete vs. continuous)
 2. Conditional probability objects for each node
 
 In particular:
 
-- **A** and **B** are defined using categorical CPTs
-- **C | A, B** follows a Gaussian model
-- **OC | C** is a noisy observation model
-- **E | C, D** is deterministic
+- **P(A)** and **P(B)** are defined using categorical CPTs
+- **P(C | A, B)** follows a Gaussian model
+- **P(OC | C)** is a noisy observation model
+- **P(E | C, D)** is deterministic
 
 This separation between variables and probability objects allows
 TBN to mix arbitrary discrete, continuous, and deterministic relations
@@ -137,7 +137,7 @@ Key steps are:
 
 3. Adaptive MCMC  
    An adaptive Metropolis–Hastings sampler is used to infer the
-   posterior of *(A, B, C)* given the evidence.
+   posterior of *(A, B, C)* given the evidence, i.e. **P(A, B, C | OC=oc)**.
 
 TBN evaluates many Monte Carlo samples simultaneously by reformulating
 inference computations as tensor operations. This enables efficient
@@ -155,26 +155,6 @@ continuous parts of the network.
 
 - **A**: posterior probability shifts relative to the prior
 - **B**: moderate posterior update through indirect influence
-- **C**: posterior density becomes significantly narrower
+- **C**: posterior density becomes narrower
 
 This demonstrates how noisy observations constrain latent variables.
-
-What this example illustrates
-------------------------------
-
-This example highlights several key features of TBN:
-
-- Unified treatment of discrete and continuous variables
-- Tensorised evaluation of large numbers of Monte Carlo samples
-- Efficient adaptive MCMC for scalable Bayesian network inference
-- Clear separation between model specification and inference
-
-Although small, the ABCDE example mirrors the same inference pipeline
-used for larger infrastructure and system-level models.
-
-Next steps
-----------
-
-- Extend the example by conditioning on **E**
-- Increase the number of evidence rows to stress-test scalability
-- Enable GPU acceleration by setting ``USE_CUDA=1``

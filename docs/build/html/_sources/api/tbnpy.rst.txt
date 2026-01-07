@@ -8,6 +8,7 @@ Submodules
    :maxdepth: 4
 
    tbnpy.variable
+   custom_probability_models
    tbnpy.cpt
    tbnpy.inference
    tbnpy.adaptiveMH
