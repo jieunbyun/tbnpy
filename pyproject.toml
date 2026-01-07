@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tbnpy"
+version = "0.1.0"
+description = "Tensor-based Bayesian Network (TBN) toolkit for scalable probabilistic inference"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Ji-Eun Byun" }]
+requires-python = ">=3.9"
+
+dependencies = [
+  "numpy>=1.23",
+  "torch>=2.0",
+  "pandas>=1.5",
+  "ndtools-duco>=0.1.5"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+]
+
+docs = [
+  "sphinx>=8",
+  "furo",
+  "myst-parser",
+  "sphinx-autodoc-typehints",
+]
+
+[project.urls]
+Homepage = "https://github.com/jieunbyun/tbnpy"
+Documentation = "https://jieunbyun.github.io/tbnpy/"
+
+[tool.setuptools]
+# If your package directory is "tbnpy/" at the repo root, this is enough.
+packages = ["tbnpy"]
+
+[tool.setuptools.package-data]
+# If you have any non-.py files inside the package you want to ship, list patterns here.
+tbnpy = ["py.typed"]
