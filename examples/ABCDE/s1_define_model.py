@@ -45,4 +45,5 @@ def define_probs(varis, device='cpu'):
 if __name__ == '__main__':
     varis = define_variables()
     probs = define_probs(varis, device=device)
+    print("Defined variables and probabilities.")
 
