@@ -16,6 +16,8 @@ copyright = '2026, DUCO research group'
 author = 'DUCO research group'
 release = '0.1.0'
 
+html_baseurl = "https://jieunbyun.github.io/tbnpy/"
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
