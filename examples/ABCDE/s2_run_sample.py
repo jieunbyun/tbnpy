@@ -240,6 +240,10 @@ if __name__ == "__main__":
     varis = define_variables()
     probs = define_probs(varis, device=device)
 
+    # Prior distribution without evidence
+    prior = sample_prior(probs, varis, n_sample=10_000)
+
+    # Posterior inference with evidence
     n_evi = 20
     evidence = define_evidence(n_evi=n_evi)
 
@@ -262,7 +266,6 @@ if __name__ == "__main__":
         progress_every = 100
     )
 
-    prior = sample_prior(probs, varis, n_sample=10_000)
     posterior = extract_posterior(sampler)
     for _, v in query_varis.items():
         if v.name in evidence.columns:
