@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import pytest
 from tbnpy import cpt, variable
 from examples.ABCDE import c, e, s1_define_model
 from tbnpy import inference
@@ -59,6 +60,112 @@ def test_find_ancestor_order4():
     assert pos['A'] < pos['C']
     assert pos['B'] < pos['C']
     assert pos['C'] < pos['OC']
+
+
+# ---------------------------------------------------------------------------
+# Multi-child node support for get_ancestor_order
+# ---------------------------------------------------------------------------
+#
+# The tests below use small mock objects that expose only the attributes
+# get_ancestor_order reads (`.name`, `.childs`, `.parents`). This isolates
+# the topological-ordering logic from any concrete probability backend.
+# ---------------------------------------------------------------------------
+
+class _MockVar:
+    def __init__(self, name):
+        self.name = name
+
+
+class _MockProb:
+    def __init__(self, childs, parents):
+        self.childs = childs
+        self.parents = parents
+
+
+def test_find_ancestor_order_multi_child_basic():
+    # N1 owns two child variables [X, Y]; N2 has X as a parent.
+    X = _MockVar('X')
+    Y = _MockVar('Y')
+    P = _MockVar('P')
+
+    probs = {
+        'N1': _MockProb(childs=[X, Y], parents=[]),
+        'N2': _MockProb(childs=[P],    parents=[X]),
+    }
+
+    result = inference.get_ancestor_order(probs, query_nodes=['N2'])
+
+    assert set(result) == {'N1', 'N2'}
+    pos = {node: i for i, node in enumerate(result)}
+    assert pos['N1'] < pos['N2']
+
+
+def test_find_ancestor_order_multi_child_diamond():
+    # N1 owns [X, Y]; N2 lists BOTH X and Y as parents.
+    # Edge N1 -> N2 must be counted exactly once, so indegree[N2] == 1
+    # and Kahn's algorithm produces a complete ordering.
+    X = _MockVar('X')
+    Y = _MockVar('Y')
+    Z = _MockVar('Z')
+
+    probs = {
+        'N1': _MockProb(childs=[X, Y], parents=[]),
+        'N2': _MockProb(childs=[Z],    parents=[X, Y]),
+    }
+
+    result = inference.get_ancestor_order(probs, query_nodes=['N2'])
+
+    assert result == ['N1', 'N2']
+
+
+def test_find_ancestor_order_multi_child_chain():
+    # N1 -> {N2, N3} via X, Y; then N2 and N3 feed into N4 via P, Q.
+    #
+    #         N1
+    #        /  \
+    #       X    Y
+    #       |    |
+    #       N2   N3
+    #       |    |
+    #       P    Q
+    #        \  /
+    #         N4 -> R
+    X = _MockVar('X')
+    Y = _MockVar('Y')
+    P = _MockVar('P')
+    Q = _MockVar('Q')
+    R = _MockVar('R')
+
+    probs = {
+        'N1': _MockProb(childs=[X, Y], parents=[]),
+        'N2': _MockProb(childs=[P],    parents=[X]),
+        'N3': _MockProb(childs=[Q],    parents=[Y]),
+        'N4': _MockProb(childs=[R],    parents=[P, Q]),
+    }
+
+    result = inference.get_ancestor_order(probs, query_nodes=['N4'])
+
+    assert set(result) == {'N1', 'N2', 'N3', 'N4'}
+    pos = {node: i for i, node in enumerate(result)}
+    assert pos['N1'] < pos['N2']
+    assert pos['N1'] < pos['N3']
+    assert pos['N2'] < pos['N4']
+    assert pos['N3'] < pos['N4']
+
+
+def test_find_ancestor_order_duplicate_child_variable_rejected():
+    # A variable that appears as a child of two different probability objects
+    # is ambiguous and must be rejected.
+    X = _MockVar('X')
+
+    probs = {
+        'N1': _MockProb(childs=[X], parents=[]),
+        'N2': _MockProb(childs=[X], parents=[]),
+    }
+
+    with pytest.raises(AssertionError, match="appears as child of more than one"):
+        inference.get_ancestor_order(probs, query_nodes=['N1'])
+
 
 def test_sample1():
     varis = s1_define_model.define_variables()
