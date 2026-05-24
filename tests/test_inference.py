@@ -66,10 +66,10 @@ def test_sample1():
 
     sampled_probs = inference.sample(probs, query_nodes=['E'], n_sample=3)
 
-    # Check that sampled Cs and ps exist for each ancestor
-    for node in ['A', 'B', 'C', 'D', 'E']:
-        assert hasattr(sampled_probs[node], 'Cs'), f"Node {node} missing sampled Cs"
-        assert hasattr(sampled_probs[node], 'ps'), f"Node {node} missing sampled ps"
+    # Only query nodes are returned
+    assert sampled_probs.keys() == {'E'}
+    assert hasattr(sampled_probs['E'], 'Cs'), "Node E missing sampled Cs"
+    assert hasattr(sampled_probs['E'], 'ps'), "Node E missing sampled ps"
 
 def test_sample2():
     varis = s1_define_model.define_variables()
@@ -77,12 +77,26 @@ def test_sample2():
 
     sampled_probs = inference.sample(probs, query_nodes=['OC'], n_sample=3)
 
-    assert sampled_probs.keys() == {'A', 'B', 'C', 'OC'}
+    # Only query nodes are returned
+    assert sampled_probs.keys() == {'OC'}
+    assert hasattr(sampled_probs['OC'], 'Cs'), "Node OC missing sampled Cs"
+    assert hasattr(sampled_probs['OC'], 'ps'), "Node OC missing sampled ps"
 
-    # Check that sampled Cs and ps exist for each ancestor
-    for node in ['A', 'B', 'C', 'OC']:
-        assert hasattr(sampled_probs[node], 'Cs'), f"Node {node} missing sampled Cs"
-        assert hasattr(sampled_probs[node], 'ps'), f"Node {node} missing sampled ps"
+def test_sample_batch_size():
+    varis = s1_define_model.define_variables()
+    probs = s1_define_model.define_probs(varis, device=device)
+
+    n_sample = 7
+    sampled_probs = inference.sample(
+        probs,
+        query_nodes=['OC'],
+        n_sample=n_sample,
+        batch_size=2,
+    )
+
+    # Only query node is returned; verify sample count
+    assert sampled_probs.keys() == {'OC'}
+    assert sampled_probs['OC'].Cs.shape[0] == n_sample
 
 def test_sample_evidence1(dict_cpt2):
 
@@ -122,47 +136,11 @@ def test_sample_evidence1(dict_cpt2):
         evidence_df=evidence_df
     )
 
-    # --------------------------------------------------------
-    # A2 — OBSERVED VARIABLE
-    # --------------------------------------------------------
-    A2 = sampled_probs['A2']
-
-    assert A2.Cs.shape == (n_evi, n_sample, 1)
-
-    # All entries must be 1
-    assert torch.all(A2.Cs[:, :, 0] == 1)
-
-    # log probability of A2 = 1 in its CPT: log(0.7)
-    expected_logp_A2 = torch.log(torch.tensor(0.7))
-
-    assert torch.allclose(
-        A2.ps,
-        torch.full((n_evi, n_sample), expected_logp_A2),
-        atol=1e-6
-    )
-
+    # Only query node is returned
+    assert sampled_probs.keys() == {'A1'}
 
     # --------------------------------------------------------
-    # A3 — ROOT VARIABLE
-    # --------------------------------------------------------
-    A3 = sampled_probs['A3']
-
-    assert A3.Cs.shape == (n_evi, n_sample, 1)
-
-    vals = A3.Cs[:, :, 0]
-    assert torch.all((vals == 0) | (vals == 1))
-
-    for i in range(n_evi):
-        for j in range(n_sample):
-            v = int(vals[i, j].item())
-            p = 0.6 if v == 0 else 0.4
-            expected_logp = torch.log(torch.tensor(p))
-
-            assert abs(A3.ps[i, j].item() - expected_logp.item()) < 1e-6
-
-
-    # --------------------------------------------------------
-    # A1 — CHILD OF A2 AND A3
+    # A1 — CHILD OF A2 AND A3 (query node)
     # --------------------------------------------------------
     A1 = sampled_probs['A1']
 
@@ -185,4 +163,40 @@ def test_sample_evidence1(dict_cpt2):
             expected_logp = torch.log(torch.tensor(expected_map[triple]))
 
             assert abs(A1.ps[i, j].item() - expected_logp.item()) < 1e-6
+
+def test_sample_evidence_batch_size(dict_cpt2):
+
+    mycpt = {}
+
+    mycpt['A1'] = cpt.Cpt(**dict_cpt2)
+
+    mycpt['A2'] = cpt.Cpt(
+        childs=[mycpt['A1'].parents[0]],
+        C=np.array([[0], [1]]),
+        p=np.array([0.3, 0.7]),
+        device=device
+    )
+
+    mycpt['A3'] = cpt.Cpt(
+        childs=[mycpt['A1'].parents[1]],
+        C=np.array([[0], [1]]),
+        p=np.array([0.6, 0.4]),
+        device=device
+    )
+
+    evidence_df = pd.DataFrame({'A2': [1, 1, 1]})
+    n_sample = 5
+    n_evi = len(evidence_df)
+
+    sampled_probs = inference.sample_evidence(
+        probs=mycpt,
+        query_nodes=['A1'],
+        n_sample=n_sample,
+        evidence_df=evidence_df,
+        batch_size=2,
+    )
+
+    # Only query node is returned
+    assert sampled_probs.keys() == {'A1'}
+    assert sampled_probs['A1'].Cs.shape == (n_evi, n_sample, 3)
 

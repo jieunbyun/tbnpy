@@ -108,90 +108,90 @@ def get_ancestor_order(probs, query_nodes):
 
     return ordering
 
-def sample(probs, query_nodes, n_sample):
+def _validate_batch_size(batch_size):
+    assert isinstance(batch_size, int), "`batch_size` must be an integer."
+    assert batch_size > 0, "`batch_size` must be positive."
+
+
+def sample(probs, query_nodes, n_sample, batch_size=50_000):
     """
-    Forward-sample all ancestors of query_nodes into a deep-copied probability
-    structure, storing for each node X:
-        - X.Cs : tensor (n_sample, n_childs + n_parents)
-        - X.ps : tensor (n_sample,)   probability or log-probability
+    Forward-sample all ancestors of query_nodes, returning samples for
+    query_nodes only. Intermediate ancestor samples are discarded after
+    each batch to reduce peak memory usage.
 
     Returns:
-        dict: {node_name: updated probability object} in ancestor order.
+        dict: {node_name: updated probability object} for query nodes only.
+              Each object has:
+                  - .Cs : tensor (n_sample, n_childs + n_parents)
+                  - .ps : tensor (n_sample,)
     """
 
     # --- Validate input ----------------------------------------------------
     assert isinstance(probs, dict)
     assert isinstance(query_nodes, (list, set))
     assert all(q in probs for q in query_nodes)
+    assert isinstance(n_sample, int), "`n_sample` must be an integer."
+    assert n_sample > 0, "`n_sample` must be positive."
+    _validate_batch_size(batch_size)
 
-    # --- Get ancestor ordering --------------------------------------------
     ordered_nodes = get_ancestor_order(probs, query_nodes)
+    query_set = set(query_nodes)
 
-    # --- Create a deep copy of only the nodes we need ----------------------
     probs_copy = {node: copy.deepcopy(probs[node]) for node in ordered_nodes}
 
-    # --- Build lookup: variable name → (prob_node_name, child_idx) ---------
-    #    So we can find where any variable's samples live.
-    var_to_source = {}
-    for node_name, prob in probs_copy.items():
-        for j, child_var in enumerate(prob.childs):
-            vname = child_var.name
-            assert vname not in var_to_source, (
-                f"Variable '{vname}' appears as child of more than one probability object."
-            )
-            var_to_source[vname] = (node_name, j)
+    # Accumulators for query nodes only
+    query_Cs_batches = {node: [] for node in query_set}
+    query_ps_batches = {node: [] for node in query_set}
 
-    # --- Forward sampling ---------------------------------------------------
-    for node in ordered_nodes:
-        prob = probs_copy[node]
-        parents = prob.parents
+    # --- Forward sampling: batch-outer, node-inner -------------------------
+    for start in range(0, n_sample, batch_size):
+        end = min(start + batch_size, n_sample)
+        n_batch = end - start
 
-        # Build parent sample matrix
-        if len(parents) == 0:
-            Cs, ps = prob.sample(n_sample)
+        # Temporary per-batch storage: var_name -> (n_batch,)
+        batch_samples = {}
 
-        else:
-            # Retrieve parent samples from probs_copy
-            Cs_list = []
-            for parent in parents:
-                pname = parent.name
+        for node in ordered_nodes:
+            prob = probs_copy[node]
+            parents = prob.parents
 
-                # Find where this parent variable is generated
-                assert pname in var_to_source, (
-                    f"Parent variable '{pname}' does not appear as a child "
-                    f"of any probability object."
-                )
-
-                src_node, child_idx = var_to_source[pname]
-                parent_Cs = probs_copy[src_node].Cs     # shape (n_sample, n_childs+...)
-
-                if parent_Cs.ndim == 1:
-                        assert child_idx == 0, (
-                            f"Variable '{pname}' expected to be the first/only child of node '{src_node}', "
-                            f"but child_idx={child_idx}. Cs is 1-dimensional so only child_idx=0 is valid."
-                        )
-                        parent_samples = parent_Cs  # shape (n_sample,)
-
-                elif parent_Cs.ndim == 2:
-                    parent_samples = parent_Cs[:, child_idx]
-
-                else:
-                    raise ValueError(
-                        f"Unexpected Cs shape {parent_Cs.shape} for node '{src_node}'. "
-                        "Cs must be 1D or 2D."
+            if len(parents) == 0:
+                Cs_batch, ps_batch = prob.sample(n_sample=n_batch)
+            else:
+                Cs_list = []
+                for parent in parents:
+                    pname = parent.name
+                    assert pname in batch_samples, (
+                        f"Parent variable '{pname}' does not appear as a child "
+                        f"of any probability object."
                     )
-                
-                Cs_list.append(parent_samples)
+                    Cs_list.append(batch_samples[pname])
 
-            Cs_par = torch.stack(Cs_list, dim=1)
-            Cs, ps = prob.sample(Cs_par)     # Cs: (N,1+np), ps: (N,)
+                Cs_par = torch.stack(Cs_list, dim=1)
+                Cs_batch, ps_batch = prob.sample(Cs_pars=Cs_par)
 
-        # Store inside the copied probability node
-        prob.Cs = Cs
-        prob.ps = ps
+            # Store each child variable's samples for use by descendants
+            for j, child_var in enumerate(prob.childs):
+                if Cs_batch.ndim == 1:
+                    batch_samples[child_var.name] = Cs_batch
+                else:
+                    batch_samples[child_var.name] = Cs_batch[:, j]
 
-    # --- Return only the relevant updated probability objects -------------
-    return {node: probs_copy[node] for node in ordered_nodes}
+            if node in query_set:
+                query_Cs_batches[node].append(Cs_batch)
+                query_ps_batches[node].append(ps_batch)
+
+        # batch_samples discarded at end of each batch
+
+    # --- Assemble results for query nodes only -----------------------------
+    result = {}
+    for node in query_set:
+        prob = probs_copy[node]
+        prob.Cs = torch.cat(query_Cs_batches[node], dim=0)
+        prob.ps = torch.cat(query_ps_batches[node], dim=0)
+        result[node] = prob
+
+    return result
 
 def sample_evidence_v0(probs, query_nodes, n_sample, evidence_df):
     """
@@ -368,15 +368,16 @@ def sample_evidence_v0(probs, query_nodes, n_sample, evidence_df):
     return {node: probs_copy[node] for node in ordered_nodes}
 
 
-def sample_evidence(probs, query_nodes, n_sample, evidence_df):
+def sample_evidence(probs, query_nodes, n_sample, evidence_df, batch_size=50_000):
     """
     Forward-sample all ancestors of `query_nodes` under multiple evidence rows,
-    using ONLY prob.sample() (no prob.sample_evidence).
+    returning samples for query_nodes only. Intermediate ancestor samples are
+    discarded after each batch to reduce peak memory usage.
 
     Returns
     -------
     dict :
-        {node_name : probability object}
+        {node_name : probability object} for query nodes only.
         Each object contains:
             - object.Cs : (n_evi, n_sample, n_childs + n_parents)
             - object.ps : (n_evi, n_sample)
@@ -388,120 +389,110 @@ def sample_evidence(probs, query_nodes, n_sample, evidence_df):
     assert isinstance(probs, dict)
     assert isinstance(query_nodes, (list, set))
     assert hasattr(evidence_df, "columns")
+    assert isinstance(n_sample, int), "`n_sample` must be an integer."
+    assert n_sample > 0, "`n_sample` must be positive."
+    _validate_batch_size(batch_size)
 
     n_evi = len(evidence_df)
-
-    # --------------------------------------------------
-    # Ancestor ordering
-    # --------------------------------------------------
     ordered_nodes = get_ancestor_order(probs, query_nodes)
+    query_set = set(query_nodes)
 
-    # --------------------------------------------------
-    # Deep copy relevant nodes
-    # --------------------------------------------------
     probs_copy = {node: copy.deepcopy(probs[node]) for node in ordered_nodes}
 
-    # --------------------------------------------------
-    # Storage for sampled variables
-    # samples[var_name] : (n_evi, n_sample)
-    # --------------------------------------------------
-    samples = {}
+    # Accumulators for query nodes only
+    query_Cs_batches = {node: [] for node in query_set}
+    query_ps_batches = {node: [] for node in query_set}
 
     # --------------------------------------------------
-    # Forward sampling
+    # Forward sampling: batch-outer, node-inner
     # --------------------------------------------------
-    for node in ordered_nodes:
+    for start in range(0, n_sample, batch_size):
+        end = min(start + batch_size, n_sample)
+        n_batch = end - start
 
-        prob = probs_copy[node]
-        parents = prob.parents
-        n_childs = len(prob.childs)
-        n_parents = len(parents)
+        # Temporary per-batch storage: var_name -> (n_evi, n_batch)
+        batch_samples = {}
 
-        # ==================================================
-        # CASE 0 — Child variable is observed (evidence)
-        # ==================================================
-        if node in evidence_df.columns:
+        for node in ordered_nodes:
 
-            # child values: (n_evi, n_sample)
-            ev = torch.tensor(evidence_df[node].values, device=prob.device)
-            child_vals = ev.unsqueeze(1).expand(n_evi, n_sample)
+            prob = probs_copy[node]
+            parents = prob.parents
+            n_childs = len(prob.childs)
+            n_parents = len(parents)
 
-            # build parent tensor (3D)
-            Cs_par_cols = []
-            for parent in parents:
-                pname = parent.name
-                if pname in evidence_df.columns:
-                    col = torch.tensor(evidence_df[pname].values, device=prob.device)
-                    col = col.unsqueeze(1).expand(n_evi, n_sample)
+            if node in evidence_df.columns:
+                ev = torch.tensor(evidence_df[node].values, device=prob.device)
+                child_vals = ev.unsqueeze(1).expand(n_evi, n_batch)
+
+                Cs_par_cols = []
+                for parent in parents:
+                    pname = parent.name
+                    if pname in evidence_df.columns:
+                        col = torch.tensor(evidence_df[pname].values, device=prob.device)
+                        col = col.unsqueeze(1).expand(n_evi, n_batch)
+                    else:
+                        col = batch_samples[pname]
+                    Cs_par_cols.append(col.unsqueeze(2))
+
+                if Cs_par_cols:
+                    Cs_par_3d = torch.cat(Cs_par_cols, dim=2)
+                    Cs_batch = torch.cat([child_vals.unsqueeze(2), Cs_par_3d], dim=2)
                 else:
-                    col = samples[pname]
-                Cs_par_cols.append(col.unsqueeze(2))
+                    Cs_batch = child_vals.unsqueeze(2)
 
-            # assemble Cs
-            if Cs_par_cols:
-                Cs_par_3d = torch.cat(Cs_par_cols, dim=2)
-                Cs = torch.cat([child_vals.unsqueeze(2), Cs_par_3d], dim=2)
+                Cs_flat = Cs_batch.reshape(-1, Cs_batch.shape[2])
+                logp_flat = prob.log_prob(Cs_flat)
+                ps_batch = logp_flat.reshape(n_evi, n_batch)
+
+                batch_samples[node] = child_vals
+
+            elif n_parents == 0:
+                total = n_evi * n_batch
+                Cs_child_flat, ps_flat = prob.sample(n_sample=total)
+
+                Cs_batch = Cs_child_flat.reshape(n_evi, n_batch, n_childs)
+                ps_batch = ps_flat.reshape(n_evi, n_batch)
+
+                for j, child_var in enumerate(prob.childs):
+                    batch_samples[child_var.name] = Cs_batch[:, :, j]
+
             else:
-                Cs = child_vals.unsqueeze(2)
+                Cs_par_cols = []
+                for parent in parents:
+                    pname = parent.name
+                    if pname in evidence_df.columns:
+                        col = torch.tensor(evidence_df[pname].values, device=prob.device)
+                        col = col.unsqueeze(1).expand(n_evi, n_batch)
+                    else:
+                        col = batch_samples[pname]
+                    Cs_par_cols.append(col.unsqueeze(2))
 
-            # log-prob only (no sampling)
-            Cs_flat = Cs.reshape(-1, Cs.shape[2])
-            logp_flat = prob.log_prob(Cs_flat)
-            ps = logp_flat.reshape(n_evi, n_sample)
+                Cs_par_3d = torch.cat(Cs_par_cols, dim=2)
+                Cs_par_flat = Cs_par_3d.reshape(-1, n_parents)
 
-            prob.Cs = Cs
-            prob.ps = ps
-            samples[node] = child_vals
-            continue
+                Cs_child_flat, ps_flat = prob.sample(Cs_pars=Cs_par_flat)
 
-        # ==================================================
-        # CASE 1 — Root node (no parents)
-        # ==================================================
-        if n_parents == 0:
+                Cs_child = Cs_child_flat.reshape(n_evi, n_batch, n_childs)
+                ps_batch = ps_flat.reshape(n_evi, n_batch)
+                Cs_batch = torch.cat([Cs_child, Cs_par_3d], dim=2)
 
-            total = n_evi * n_sample
-            Cs_child_flat, ps_flat = prob.sample(n_sample=total)
+                for j, child_var in enumerate(prob.childs):
+                    batch_samples[child_var.name] = Cs_batch[:, :, j]
 
-            Cs_child = Cs_child_flat.reshape(n_evi, n_sample, n_childs)
-            ps = ps_flat.reshape(n_evi, n_sample)
+            if node in query_set:
+                query_Cs_batches[node].append(Cs_batch)
+                query_ps_batches[node].append(ps_batch)
 
-            Cs = Cs_child
-
-        # ==================================================
-        # CASE 2 — Non-root node (parents exist)
-        # ==================================================
-        else:
-
-            # build parent tensor (3D)
-            Cs_par_cols = []
-            for parent in parents:
-                pname = parent.name
-                if pname in evidence_df.columns:
-                    col = torch.tensor(evidence_df[pname].values, device=prob.device)
-                    col = col.unsqueeze(1).expand(n_evi, n_sample)
-                else:
-                    col = samples[pname]
-                Cs_par_cols.append(col.unsqueeze(2))
-
-            Cs_par_3d = torch.cat(Cs_par_cols, dim=2)  # (n_evi, n_sample, n_parents)
-            Cs_par_flat = Cs_par_3d.reshape(-1, n_parents)
-
-            # sample children conditionally
-            Cs_child_flat, ps_flat = prob.sample(Cs_pars=Cs_par_flat)
-
-            Cs_child = Cs_child_flat.reshape(n_evi, n_sample, n_childs)
-            ps = ps_flat.reshape(n_evi, n_sample)
-
-            Cs = torch.cat([Cs_child, Cs_par_3d], dim=2)
-
-        # --------------------------------------------------
-        # Store results
-        # --------------------------------------------------
-        prob.Cs = Cs
-        prob.ps = ps
-
-        for j, child_var in enumerate(prob.childs):
-            samples[child_var.name] = Cs[:, :, j]
+        # batch_samples discarded at end of each batch
 
     # --------------------------------------------------
-    return probs_copy
+    # Assemble results for query nodes only
+    # --------------------------------------------------
+    result = {}
+    for node in query_set:
+        prob = probs_copy[node]
+        prob.Cs = torch.cat(query_Cs_batches[node], dim=1)
+        prob.ps = torch.cat(query_ps_batches[node], dim=1)
+        result[node] = prob
+
+    return result
