@@ -3,12 +3,12 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="prev" title="tbnpy.adaptiveMH" href="../api/tbnpy.adaptiveMH.html">
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="EMA aftershock example" href="EMA_aftershock.html"><link rel="prev" title="tbnpy.adaptiveMH" href="../api/tbnpy.adaptiveMH.html">
         <link rel="canonical" href="https://jieunbyun.github.io/tbnpy/examples/abcde_example.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>ABCDE example - tbnpy 0.1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=acfd86a5" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -207,6 +207,7 @@
 </ul>
 </li>
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">ABCDE example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="EMA_aftershock.html">EMA aftershock example</a></li>
 </ul>
 
 </div>
@@ -283,11 +284,11 @@ probability models:</p>
 <ul>
 <li><p><strong>C | A, B</strong>: Gaussian distribution with mean and variance depending on the
 discrete parents <em>(A, B)</em>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="linenos"> 2</span><span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Normal</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="linenos"> 2</span><span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Normal</span>
 <span class="linenos"> 3</span>
-<span class="linenos"> 4</span><span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
-<span class="linenos"> 5</span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">childs</span><span class="p">,</span> <span class="n">parents</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">):</span>
+<span class="linenos"> 4</span><span class="k">class</span><span class="w"> </span><span class="nc">C</span><span class="p">:</span>
+<span class="linenos"> 5</span>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">childs</span><span class="p">,</span> <span class="n">parents</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cpu&quot;</span><span class="p">):</span>
 <span class="linenos"> 6</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos"> 7</span><span class="sd">        C | A,B ~ Normal(A + B, sigma^2)</span>
 <span class="linenos"> 8</span>
@@ -314,7 +315,7 @@ discrete parents <em>(A, B)</em>:</p>
 <span class="linenos">29</span>        <span class="p">)</span>
 <span class="linenos">30</span>
 <span class="linenos">31</span>    <span class="c1"># ------------------------------------------------------------------</span>
-<span class="linenos">32</span>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs_pars</span><span class="p">):</span>
+<span class="linenos">32</span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs_pars</span><span class="p">):</span>
 <span class="linenos">33</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos">34</span><span class="sd">        Cs_pars : (N, 2)</span>
 <span class="linenos">35</span><span class="sd">            Cs_pars[:,0] = A index</span>
@@ -340,7 +341,7 @@ discrete parents <em>(A, B)</em>:</p>
 <span class="linenos">55</span>        <span class="k">return</span> <span class="n">Cs</span><span class="p">,</span> <span class="n">logp</span>
 <span class="linenos">56</span>
 <span class="linenos">57</span>    <span class="c1"># ------------------------------------------------------------------</span>
-<span class="linenos">58</span>    <span class="k">def</span> <span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs</span><span class="p">):</span>
+<span class="linenos">58</span>    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs</span><span class="p">):</span>
 <span class="linenos">59</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos">60</span><span class="sd">        Cs : (N, 3)</span>
 <span class="linenos">61</span><span class="sd">            Cs[:,0] = C value</span>
@@ -366,11 +367,11 @@ discrete parents <em>(A, B)</em>:</p>
 </div>
 </li>
 <li><p><strong>OC | C</strong>: Noisy observation model with Gaussian noise:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">torch</span>
-<span class="linenos"> 2</span><span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Normal</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="linenos"> 2</span><span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Normal</span>
 <span class="linenos"> 3</span>
-<span class="linenos"> 4</span><span class="k">class</span> <span class="nc">OC</span><span class="p">:</span>
-<span class="linenos"> 5</span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">childs</span><span class="p">,</span> <span class="n">parents</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
+<span class="linenos"> 4</span><span class="k">class</span><span class="w"> </span><span class="nc">OC</span><span class="p">:</span>
+<span class="linenos"> 5</span>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">childs</span><span class="p">,</span> <span class="n">parents</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
 <span class="linenos"> 6</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos"> 7</span><span class="sd">        childs: [OC variable]</span>
 <span class="linenos"> 8</span><span class="sd">        parents: [C variable]</span>
@@ -384,7 +385,7 @@ discrete parents <em>(A, B)</em>:</p>
 <span class="linenos">16</span>        <span class="bp">self</span><span class="o">.</span><span class="n">std</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 <span class="linenos">17</span>
 <span class="linenos">18</span>    <span class="c1"># --------------------------------------------------------------</span>
-<span class="linenos">19</span>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs_pars</span><span class="p">):</span>
+<span class="linenos">19</span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs_pars</span><span class="p">):</span>
 <span class="linenos">20</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos">21</span><span class="sd">        Cs_pars: tensor (N, 1)</span>
 <span class="linenos">22</span><span class="sd">            Cs_pars[:,0] = C value</span>
@@ -402,7 +403,7 @@ discrete parents <em>(A, B)</em>:</p>
 <span class="linenos">34</span>        <span class="k">return</span> <span class="n">Cs</span><span class="p">,</span> <span class="n">ps</span>  
 <span class="linenos">35</span>
 <span class="linenos">36</span>    <span class="c1"># --------------------------------------------------------------</span>
-<span class="linenos">37</span>    <span class="k">def</span> <span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs</span><span class="p">):</span>
+<span class="linenos">37</span>    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs</span><span class="p">):</span>
 <span class="linenos">38</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos">39</span><span class="sd">        Cs: tensor (N, 2)</span>
 <span class="linenos">40</span><span class="sd">            Cs[:,0] = observed OC value </span>
@@ -422,10 +423,10 @@ discrete parents <em>(A, B)</em>:</p>
 </div>
 </li>
 <li><p><strong>E | C, D</strong>: Deterministic relation defined by a function:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">torch</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="linenos"> 2</span>
-<span class="linenos"> 3</span><span class="k">class</span> <span class="nc">E</span><span class="p">:</span>
-<span class="linenos"> 4</span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">childs</span><span class="p">,</span> <span class="n">parents</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
+<span class="linenos"> 3</span><span class="k">class</span><span class="w"> </span><span class="nc">E</span><span class="p">:</span>
+<span class="linenos"> 4</span>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">childs</span><span class="p">,</span> <span class="n">parents</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
 <span class="linenos"> 5</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos"> 6</span><span class="sd">        childs: list [E] (unused but consistent with your structure)</span>
 <span class="linenos"> 7</span><span class="sd">        parents: list [C, D]</span>
@@ -437,7 +438,7 @@ discrete parents <em>(A, B)</em>:</p>
 <span class="linenos">13</span>        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
 <span class="linenos">14</span>
 <span class="linenos">15</span>    <span class="c1"># ------------------------------------------------------------------</span>
-<span class="linenos">16</span>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs_pars</span><span class="p">):</span>
+<span class="linenos">16</span>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Cs_pars</span><span class="p">):</span>
 <span class="linenos">17</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos">18</span><span class="sd">        Cs_pars: (N, 2)</span>
 <span class="linenos">19</span><span class="sd">            Cs_pars[:,0] = C value   (float)</span>
@@ -461,7 +462,7 @@ discrete parents <em>(A, B)</em>:</p>
 <span class="linenos">37</span>        <span class="k">return</span> <span class="n">Cs</span><span class="p">,</span> <span class="n">ps</span>
 <span class="linenos">38</span>
 <span class="linenos">39</span>    <span class="c1"># ------------------------------------------------------------------</span>
-<span class="linenos">40</span>    <span class="k">def</span> <span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Es</span><span class="p">):</span>
+<span class="linenos">40</span>    <span class="k">def</span><span class="w"> </span><span class="nf">log_prob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Es</span><span class="p">):</span>
 <span class="linenos">41</span><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="linenos">42</span><span class="sd">        Es: shape (N, 3)</span>
 <span class="linenos">43</span><span class="sd">            Es[:,0] = E value</span>
@@ -540,7 +541,7 @@ PyTorch tensor operations for efficiency.</p>
 TBN to mix arbitrary discrete, continuous, and deterministic relations
 within a single network.</p>
 <p>The full model definition is shown below.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
 <span class="linenos"> 2</span><span class="n">BASE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
 <span class="linenos"> 3</span><span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BASE</span><span class="p">)</span>
 <span class="linenos"> 4</span>
@@ -548,15 +549,15 @@ within a single network.</p>
 <span class="linenos"> 6</span><span class="k">if</span> <span class="n">repo_root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
 <span class="linenos"> 7</span>    <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
 <span class="linenos"> 8</span>
-<span class="linenos"> 9</span><span class="kn">from</span> <span class="nn">tbnpy</span> <span class="kn">import</span> <span class="n">cpt</span><span class="p">,</span> <span class="n">variable</span>
-<span class="linenos">10</span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="linenos">11</span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="linenos"> 9</span><span class="kn">from</span><span class="w"> </span><span class="nn">tbnpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">cpt</span><span class="p">,</span> <span class="n">variable</span>
+<span class="linenos">10</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="linenos">11</span><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
 <span class="linenos">12</span>
-<span class="linenos">13</span><span class="kn">import</span> <span class="nn">c</span><span class="o">,</span> <span class="nn">oc</span><span class="o">,</span> <span class="nn">e</span>
+<span class="linenos">13</span><span class="kn">import</span><span class="w"> </span><span class="nn">c</span><span class="o">,</span><span class="w"> </span><span class="nn">oc</span><span class="o">,</span><span class="w"> </span><span class="nn">e</span>
 <span class="linenos">14</span>
 <span class="linenos">15</span><span class="n">device</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;cuda&#39;</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;USE_CUDA&#39;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;1&#39;</span> <span class="k">else</span> <span class="s1">&#39;cpu&#39;</span><span class="p">)</span>
 <span class="linenos">16</span>
-<span class="linenos">17</span><span class="k">def</span> <span class="nf">define_variables</span><span class="p">():</span>
+<span class="linenos">17</span><span class="k">def</span><span class="w"> </span><span class="nf">define_variables</span><span class="p">():</span>
 <span class="linenos">18</span>    <span class="n">varis</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="linenos">19</span>    <span class="n">varis</span><span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
 <span class="linenos">20</span>    <span class="n">varis</span><span class="p">[</span><span class="s1">&#39;B&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">variable</span><span class="o">.</span><span class="n">Variable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">])</span>
@@ -567,7 +568,7 @@ within a single network.</p>
 <span class="linenos">25</span>
 <span class="linenos">26</span>    <span class="k">return</span> <span class="n">varis</span>
 <span class="linenos">27</span>
-<span class="linenos">28</span><span class="k">def</span> <span class="nf">define_probs</span><span class="p">(</span><span class="n">varis</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
+<span class="linenos">28</span><span class="k">def</span><span class="w"> </span><span class="nf">define_probs</span><span class="p">(</span><span class="n">varis</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cpu&#39;</span><span class="p">):</span>
 <span class="linenos">29</span>    <span class="n">probs</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="linenos">30</span>
 <span class="linenos">31</span>    <span class="c1">#probs[&#39;A&#39;] = cpt.Cpt(childs=[varis[&#39;A&#39;]], C=np.array([[0], [1]]), p=np.array([0.1, 0.9]), device=device)</span>
@@ -587,7 +588,8 @@ within a single network.</p>
 <span class="linenos">45</span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
 <span class="linenos">46</span>    <span class="n">varis</span> <span class="o">=</span> <span class="n">define_variables</span><span class="p">()</span>
 <span class="linenos">47</span>    <span class="n">probs</span> <span class="o">=</span> <span class="n">define_probs</span><span class="p">(</span><span class="n">varis</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
-<span class="linenos">48</span>
+<span class="linenos">48</span>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Defined variables and probabilities.&quot;</span><span class="p">)</span>
+<span class="linenos">49</span>
 </pre></div>
 </div>
 </section>
@@ -596,22 +598,32 @@ within a single network.</p>
 <p>The file <code class="docutils literal notranslate"><span class="pre">s2_run_sample.py</span></code> performs inference conditioned on evidence
 for <strong>OC</strong>.</p>
 <p>Key steps are:</p>
-<ol class="arabic simple">
-<li><p>Evidence definition
+<ol class="arabic">
+<li><p><strong>Prior sampling — forward inference</strong></p>
+<p>Forward inference (i.e. inference without any evidence) can be
+performed using <code class="docutils literal notranslate"><span class="pre">inference.sample_evidence</span></code> with an empty evidence
+dictionary. See the function <code class="docutils literal notranslate"><span class="pre">sample_prior</span></code>.</p>
+</li>
+<li><p><strong>Posterior inference — MCMC sampling</strong></p>
+<ol class="loweralpha simple">
+<li><p><em>Evidence definition.</em>
 Multiple observations of <strong>OC</strong> are generated and stored in a
 tabular format, allowing batched conditioning.</p></li>
-<li><p>Forward sampling initialisation
+<li><p><em>Forward sampling initialisation.</em>
 Initial MCMC chains are generated using forward sampling from the
 prior, improving stability and convergence.</p></li>
-<li><p>Adaptive MCMC
+<li><p><em>Adaptive MCMC.</em>
 An adaptive Metropolis–Hastings sampler is used to infer the
-posterior of <em>(A, B, C)</em> given the evidence, i.e. <strong>P(A, B, C | OC=oc)</strong>.</p></li>
+posterior of <em>(A, B, C)</em> given the evidence, i.e.
+<strong>P(A, B, C | OC=oc)</strong>.</p></li>
+</ol>
+</li>
 </ol>
 <p>TBN evaluates many Monte Carlo samples simultaneously by reformulating
 inference computations as tensor operations. This enables efficient
 scaling across chains, evidence rows, and iterations.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="n">BASE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
 <span class="n">RESULTS</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;results&quot;</span>
 <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BASE</span><span class="p">)</span>
@@ -620,13 +632,13 @@ scaling across chains, evidence rows, and iterations.</p>
 <span class="k">if</span> <span class="n">repo_root</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">:</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">repo_root</span><span class="p">)</span>
 
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="kn">from</span> <span class="nn">tbnpy</span> <span class="kn">import</span> <span class="n">inference</span><span class="p">,</span> <span class="n">adaptiveMH</span>
-<span class="kn">from</span> <span class="nn">s1_define_model</span> <span class="kn">import</span> <span class="n">define_variables</span><span class="p">,</span> <span class="n">define_probs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tbnpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">inference</span><span class="p">,</span> <span class="n">adaptiveMH</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">s1_define_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">define_variables</span><span class="p">,</span> <span class="n">define_probs</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Overall structure:</span>
@@ -639,7 +651,7 @@ scaling across chains, evidence rows, and iterations.</p>
 <span class="sd">└─ plotting</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="k">def</span> <span class="nf">define_evidence</span><span class="p">(</span><span class="n">n_evi</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">123</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">define_evidence</span><span class="p">(</span><span class="n">n_evi</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">123</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Evidence DataFrame: shape (n_evi, n_evidence_vars)</span>
 
@@ -653,7 +665,7 @@ scaling across chains, evidence rows, and iterations.</p>
 
     <span class="k">return</span> <span class="n">evidence</span>
 
-<span class="k">def</span> <span class="nf">sample_prior</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">n_sample</span><span class="o">=</span><span class="mi">5000</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sample_prior</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">n_sample</span><span class="o">=</span><span class="mi">5000</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Sample prior for all variables using forward sampling.</span>
 
@@ -700,7 +712,7 @@ scaling across chains, evidence rows, and iterations.</p>
 
     <span class="k">return</span> <span class="n">prior</span>
 
-<span class="k">def</span> <span class="nf">forward_initialise</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">latent_vars</span><span class="p">,</span> <span class="n">evidence</span><span class="p">,</span> <span class="n">n_chain</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">forward_initialise</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">latent_vars</span><span class="p">,</span> <span class="n">evidence</span><span class="p">,</span> <span class="n">n_chain</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Use forward sampling to initialise MCMC chains.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -712,7 +724,7 @@ scaling across chains, evidence rows, and iterations.</p>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">probs_copy</span>
 
-<span class="k">def</span> <span class="nf">run_mcmc</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">varis</span><span class="p">,</span> <span class="n">evidence</span><span class="p">,</span> <span class="n">update_blocks</span><span class="p">,</span> <span class="n">burnin</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">n_chain</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">progress_every</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_mcmc</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">varis</span><span class="p">,</span> <span class="n">evidence</span><span class="p">,</span> <span class="n">update_blocks</span><span class="p">,</span> <span class="n">burnin</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">n_chain</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">n_iter</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">progress_every</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
     <span class="n">sampler</span> <span class="o">=</span> <span class="n">adaptiveMH</span><span class="o">.</span><span class="n">HybridAdaptiveMH</span><span class="p">(</span>
         <span class="n">probs</span><span class="o">=</span><span class="n">probs</span><span class="p">,</span>
         <span class="n">variables</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">varis</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
@@ -745,7 +757,7 @@ scaling across chains, evidence rows, and iterations.</p>
 
     <span class="k">return</span> <span class="n">sampler</span><span class="p">,</span> <span class="n">out</span>
 
-<span class="k">def</span> <span class="nf">extract_posterior</span><span class="p">(</span><span class="n">sampler</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_posterior</span><span class="p">(</span><span class="n">sampler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Returns dict[var_name -&gt; 1D np.ndarray]</span>
 <span class="sd">    (all evidence rows and chains flattened)</span>
@@ -759,10 +771,10 @@ scaling across chains, evidence rows, and iterations.</p>
     <span class="k">return</span> <span class="n">posterior</span>
 
 
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
-<span class="k">def</span> <span class="nf">plot_prior_vs_posterior</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">posterior</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_prior_vs_posterior</span><span class="p">(</span><span class="n">prior</span><span class="p">,</span> <span class="n">posterior</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">fname</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot prior vs posterior for one variable.</span>
 
@@ -852,6 +864,10 @@ scaling across chains, evidence rows, and iterations.</p>
     <span class="n">varis</span> <span class="o">=</span> <span class="n">define_variables</span><span class="p">()</span>
     <span class="n">probs</span> <span class="o">=</span> <span class="n">define_probs</span><span class="p">(</span><span class="n">varis</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
 
+    <span class="c1"># Prior distribution without evidence</span>
+    <span class="n">prior</span> <span class="o">=</span> <span class="n">sample_prior</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">varis</span><span class="p">,</span> <span class="n">n_sample</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
+
+    <span class="c1"># Posterior inference with evidence</span>
     <span class="n">n_evi</span> <span class="o">=</span> <span class="mi">20</span>
     <span class="n">evidence</span> <span class="o">=</span> <span class="n">define_evidence</span><span class="p">(</span><span class="n">n_evi</span><span class="o">=</span><span class="n">n_evi</span><span class="p">)</span>
 
@@ -874,7 +890,6 @@ scaling across chains, evidence rows, and iterations.</p>
         <span class="n">progress_every</span> <span class="o">=</span> <span class="mi">100</span>
     <span class="p">)</span>
 
-    <span class="n">prior</span> <span class="o">=</span> <span class="n">sample_prior</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">varis</span><span class="p">,</span> <span class="n">n_sample</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
     <span class="n">posterior</span> <span class="o">=</span> <span class="n">extract_posterior</span><span class="p">(</span><span class="n">sampler</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">query_varis</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">evidence</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
@@ -906,7 +921,15 @@ continuous parts of the network.</p>
       <footer>
         
         <div class="related-pages">
-          
+          <a class="next-page" href="EMA_aftershock.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">EMA aftershock example</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
           <a class="prev-page" href="../api/tbnpy.adaptiveMH.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">

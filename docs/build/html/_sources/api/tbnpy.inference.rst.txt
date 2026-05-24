@@ -20,7 +20,8 @@ The key idea is to:
 
 1. collect all ancestors of query nodes,
 2. order them topologically (parents before children),
-3. forward-sample along that order, storing samples back into each probability object.
+3. forward-sample along that order in batches, retaining samples only for the **query nodes**
+   (intermediate ancestor samples are discarded after each batch to keep memory bounded).
 
 Glossary
 --------
@@ -78,25 +79,31 @@ Topological utilities
 Forward sampling without evidence
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. py:function:: sample(probs: dict, query_nodes: list[str] | set[str], n_sample: int) -> dict
+.. py:function:: sample(probs: dict, query_nodes: list[str] | set[str], n_sample: int, batch_size: int = 50_000) -> dict
 
-   Forward-sample all ancestors of ``query_nodes`` and return a deep-copied probability structure
-   with stored samples and per-sample probabilities.
+   Forward-sample all ancestors of ``query_nodes`` and return samples for the **query nodes only**.
+   Intermediate ancestor samples are held only for the duration of the current batch and discarded
+   afterwards, keeping peak memory bounded by ``batch_size`` rather than ``n_sample``.
 
    Parameters
    ----------
    probs
       Mapping from node name → probability object.
    query_nodes
-      Node names to condition the ancestral subgraph selection.
+      Node names whose samples will be returned. All ancestors are still sampled internally
+      (they are required to generate query-node samples), but are not retained in the output.
    n_sample
-      Number of samples to generate.
+      Total number of samples to generate.
+   batch_size
+      Maximum number of samples processed per batch. Controls peak memory: at any time, only
+      ``min(batch_size, n_sample)`` samples per ancestor variable are held in memory.
+      Defaults to ``50_000``.
 
    Returns
    -------
    dict
-      A dictionary ``{node_name: prob_object}`` restricted to the ancestral subgraph, in ancestor order.
-      For each returned probability object ``P``:
+      A dictionary ``{node_name: prob_object}`` containing **only the query nodes** (not their
+      ancestors). For each returned probability object ``P``:
 
       - ``P.Cs`` is a tensor with shape ``(n_sample, n_childs)`` or ``(n_sample, n_childs + n_parents)``
         depending on the implementation of ``P.sample``.
@@ -105,13 +112,21 @@ Forward sampling without evidence
    How sampling is performed
    -------------------------
    1. Compute ancestor order using :func:`get_ancestor_order`.
-   2. Deep-copy the needed probability objects.
-   3. Build a lookup ``var_to_source`` to find where each variable’s samples are stored.
-   4. For each node in topological order:
+   2. Deep-copy the needed probability objects (used to call ``P.sample`` only; ``.Cs`` / ``.ps``
+      are populated on query nodes at the end).
+   3. Iterate over batches of size ``batch_size`` (outer loop). Within each batch, walk the nodes
+      in topological order (inner loop), keeping a temporary ``batch_samples`` dictionary
+      ``{var_name: tensor(n_batch,)}`` that holds only the current batch's ancestor values.
+   4. For each node in the inner loop:
 
-      - if the node has no parents: call ``P.sample(n_sample)``.
-      - if parents exist: assemble parent sample matrix
-        ``Cs_par`` of shape ``(n_sample, n_parents)`` and call ``P.sample(Cs_par)``.
+      - if the node has no parents: call ``P.sample(n_sample=n_batch)``.
+      - if parents exist: assemble parent sample matrix ``Cs_par`` of shape
+        ``(n_batch, n_parents)`` from ``batch_samples`` and call ``P.sample(Cs_pars=Cs_par)``.
+      - if the node is a query node, append ``Cs_batch`` and ``ps_batch`` to the per-query
+        accumulators.
+
+   5. After all batches complete, concatenate the per-batch tensors for each query node along
+      the sample dimension and attach them as ``P.Cs`` / ``P.ps``.
 
    Important
    ---------

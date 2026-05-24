@@ -8,7 +8,7 @@
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
         <title>tbnpy.inference - tbnpy 0.1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=acfd86a5" />
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
     
@@ -207,6 +207,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/abcde_example.html">ABCDE example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/EMA_aftershock.html">EMA aftershock example</a></li>
 </ul>
 
 </div>
@@ -264,7 +265,8 @@ with a compatible interface works).</p>
 <ol class="arabic simple">
 <li><p>collect all ancestors of query nodes,</p></li>
 <li><p>order them topologically (parents before children),</p></li>
-<li><p>forward-sample along that order, storing samples back into each probability object.</p></li>
+<li><p>forward-sample along that order in batches, retaining samples only for the <strong>query nodes</strong>
+(intermediate ancestor samples are discarded after each batch to keep memory bounded).</p></li>
 </ol>
 </section>
 <section id="glossary">
@@ -331,25 +333,31 @@ topological order (parents appear before children).</p>
 <h3>Forward sampling without evidence<a class="headerlink" href="#forward-sampling-without-evidence" title="Link to this heading">¶</a></h3>
 <dl class="py function">
 <dt class="sig sig-object py" id="sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#sample" title="Link to this definition">¶</a></dt>
-<dd><p>Forward-sample all ancestors of <code class="docutils literal notranslate"><span class="pre">query_nodes</span></code> and return a deep-copied probability structure
-with stored samples and per-sample probabilities.</p>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50_000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#sample" title="Link to this definition">¶</a></dt>
+<dd><p>Forward-sample all ancestors of <code class="docutils literal notranslate"><span class="pre">query_nodes</span></code> and return samples for the <strong>query nodes only</strong>.
+Intermediate ancestor samples are held only for the duration of the current batch and discarded
+afterwards, keeping peak memory bounded by <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> rather than <code class="docutils literal notranslate"><span class="pre">n_sample</span></code>.</p>
 <section id="id1">
 <h4>Parameters<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h4>
 <dl class="simple">
 <dt>probs</dt><dd><p>Mapping from node name → probability object.</p>
 </dd>
-<dt>query_nodes</dt><dd><p>Node names to condition the ancestral subgraph selection.</p>
+<dt>query_nodes</dt><dd><p>Node names whose samples will be returned. All ancestors are still sampled internally
+(they are required to generate query-node samples), but are not retained in the output.</p>
 </dd>
-<dt>n_sample</dt><dd><p>Number of samples to generate.</p>
+<dt>n_sample</dt><dd><p>Total number of samples to generate.</p>
+</dd>
+<dt>batch_size</dt><dd><p>Maximum number of samples processed per batch. Controls peak memory: at any time, only
+<code class="docutils literal notranslate"><span class="pre">min(batch_size,</span> <span class="pre">n_sample)</span></code> samples per ancestor variable are held in memory.
+Defaults to <code class="docutils literal notranslate"><span class="pre">50_000</span></code>.</p>
 </dd>
 </dl>
 </section>
 <section id="id2">
 <h4>Returns<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h4>
 <dl class="simple">
-<dt>dict</dt><dd><p>A dictionary <code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">prob_object}</span></code> restricted to the ancestral subgraph, in ancestor order.
-For each returned probability object <code class="docutils literal notranslate"><span class="pre">P</span></code>:</p>
+<dt>dict</dt><dd><p>A dictionary <code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">prob_object}</span></code> containing <strong>only the query nodes</strong> (not their
+ancestors). For each returned probability object <code class="docutils literal notranslate"><span class="pre">P</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">P.Cs</span></code> is a tensor with shape <code class="docutils literal notranslate"><span class="pre">(n_sample,</span> <span class="pre">n_childs)</span></code> or <code class="docutils literal notranslate"><span class="pre">(n_sample,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code>
 depending on the implementation of <code class="docutils literal notranslate"><span class="pre">P.sample</span></code>.</p></li>
@@ -362,15 +370,22 @@ depending on the implementation of <code class="docutils literal notranslate"><s
 <h4>How sampling is performed<a class="headerlink" href="#how-sampling-is-performed" title="Link to this heading">¶</a></h4>
 <ol class="arabic simple">
 <li><p>Compute ancestor order using <a class="reference internal" href="#get_ancestor_order" title="get_ancestor_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_ancestor_order()</span></code></a>.</p></li>
-<li><p>Deep-copy the needed probability objects.</p></li>
-<li><p>Build a lookup <code class="docutils literal notranslate"><span class="pre">var_to_source</span></code> to find where each variable’s samples are stored.</p></li>
-<li><p>For each node in topological order:</p>
+<li><p>Deep-copy the needed probability objects (used to call <code class="docutils literal notranslate"><span class="pre">P.sample</span></code> only; <code class="docutils literal notranslate"><span class="pre">.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">.ps</span></code>
+are populated on query nodes at the end).</p></li>
+<li><p>Iterate over batches of size <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> (outer loop). Within each batch, walk the nodes
+in topological order (inner loop), keeping a temporary <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> dictionary
+<code class="docutils literal notranslate"><span class="pre">{var_name:</span> <span class="pre">tensor(n_batch,)}</span></code> that holds only the current batch’s ancestor values.</p></li>
+<li><p>For each node in the inner loop:</p>
 <ul class="simple">
-<li><p>if the node has no parents: call <code class="docutils literal notranslate"><span class="pre">P.sample(n_sample)</span></code>.</p></li>
-<li><p>if parents exist: assemble parent sample matrix
-<code class="docutils literal notranslate"><span class="pre">Cs_par</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_sample,</span> <span class="pre">n_parents)</span></code> and call <code class="docutils literal notranslate"><span class="pre">P.sample(Cs_par)</span></code>.</p></li>
+<li><p>if the node has no parents: call <code class="docutils literal notranslate"><span class="pre">P.sample(n_sample=n_batch)</span></code>.</p></li>
+<li><p>if parents exist: assemble parent sample matrix <code class="docutils literal notranslate"><span class="pre">Cs_par</span></code> of shape
+<code class="docutils literal notranslate"><span class="pre">(n_batch,</span> <span class="pre">n_parents)</span></code> from <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> and call <code class="docutils literal notranslate"><span class="pre">P.sample(Cs_pars=Cs_par)</span></code>.</p></li>
+<li><p>if the node is a query node, append <code class="docutils literal notranslate"><span class="pre">Cs_batch</span></code> and <code class="docutils literal notranslate"><span class="pre">ps_batch</span></code> to the per-query
+accumulators.</p></li>
 </ul>
 </li>
+<li><p>After all batches complete, concatenate the per-batch tensors for each query node along
+the sample dimension and attach them as <code class="docutils literal notranslate"><span class="pre">P.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">P.ps</span></code>.</p></li>
 </ol>
 </section>
 <section id="important">

@@ -14,5 +14,6 @@ tbnpy documentation
    getting_started/overview
    getting_started/repo_structure
    api/modules
+   examples/EMA_aftershock
    examples/abcde_example
 

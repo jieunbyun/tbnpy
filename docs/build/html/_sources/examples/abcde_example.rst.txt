@@ -127,17 +127,26 @@ for **OC**.
 
 Key steps are:
 
-1. Evidence definition  
-   Multiple observations of **OC** are generated and stored in a
-   tabular format, allowing batched conditioning.
+1. **Prior sampling — forward inference**
 
-2. Forward sampling initialisation  
-   Initial MCMC chains are generated using forward sampling from the
-   prior, improving stability and convergence.
+   Forward inference (i.e. inference without any evidence) can be
+   performed using ``inference.sample_evidence`` with an empty evidence
+   dictionary. See the function ``sample_prior``.
 
-3. Adaptive MCMC  
-   An adaptive Metropolis–Hastings sampler is used to infer the
-   posterior of *(A, B, C)* given the evidence, i.e. **P(A, B, C | OC=oc)**.
+2. **Posterior inference — MCMC sampling**
+
+   a. *Evidence definition.*
+      Multiple observations of **OC** are generated and stored in a
+      tabular format, allowing batched conditioning.
+
+   b. *Forward sampling initialisation.*
+      Initial MCMC chains are generated using forward sampling from the
+      prior, improving stability and convergence.
+
+   c. *Adaptive MCMC.*
+      An adaptive Metropolis–Hastings sampler is used to infer the
+      posterior of *(A, B, C)* given the evidence, i.e.
+      **P(A, B, C | OC=oc)**.
 
 TBN evaluates many Monte Carlo samples simultaneously by reformulating
 inference computations as tensor operations. This enables efficient
