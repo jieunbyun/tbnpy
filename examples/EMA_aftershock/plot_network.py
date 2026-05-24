@@ -29,7 +29,15 @@ RESULTS = BASE / "results"
 RESULTS.mkdir(exist_ok=True)
 
 
-def plot_network(margin_frac=0.30, fname="ema_network.png"):
+DESTS = ["n22", "n66"]
+
+
+def plot_network(margin_frac=0.30, fname="ema_network.png",
+                 fontsize_label=16, fontsize_tick=16, fontsize_legend=14,
+                 dests=None):
+    if dests is None:
+        dests = DESTS
+
     nodes, edges, _ = load_topology()
     region = region_from_nodes(nodes, margin_frac=margin_frac)
     x_min, x_max, y_min, y_max = region
@@ -43,19 +51,35 @@ def plot_network(margin_frac=0.30, fname="ema_network.png"):
                 color="0.5", linewidth=0.8, zorder=1)
 
     # ---- nodes ----
-    xs = [n["x"] for n in nodes.values()]
-    ys = [n["y"] for n in nodes.values()]
-    pops = [n.get("population", 0.0) for n in nodes.values()]
-    sizes = [10 + 30 * (p / max(pops) if max(pops) > 0 else 0) for p in pops]
-    ax.scatter(xs, ys, s=sizes, c="tab:blue", edgecolor="white",
-               linewidths=0.6, zorder=2, label="nodes")
+    dest_set = set(dests)
+    node_ids = list(nodes.keys())
+    xs = [nodes[n]["x"] for n in node_ids]
+    ys = [nodes[n]["y"] for n in node_ids]
+    pops = [nodes[n].get("population", 0.0) for n in node_ids]
+    max_pop = max(pops) if max(pops) > 0 else 1.0
+    sizes = [10 + 30 * (p / max_pop) for p in pops]
+
+    reg_idx  = [i for i, n in enumerate(node_ids) if n not in dest_set]
+    dest_idx = [i for i, n in enumerate(node_ids) if n in dest_set]
+
+    ax.scatter([xs[i] for i in reg_idx], [ys[i] for i in reg_idx],
+               s=[sizes[i] for i in reg_idx],
+               c="tab:blue", edgecolor="tab:blue", linewidths=0.6, zorder=2,
+               label="nodes\n(size $\propto$ population)")
+    ax.scatter([xs[i] for i in dest_idx], [ys[i] for i in dest_idx],
+               s=[sizes[i]*1.5 for i in dest_idx],
+               c="tab:orange", edgecolor="tab:orange", linewidths=0.8, zorder=3,
+               marker="*",
+               label=f"destinations\n({', '.join(dests)})")
 
     # ---- region rectangle ----
     rect = Rectangle(
         (x_min, y_min), x_max - x_min, y_max - y_min,
         fill=False, edgecolor="tab:red", linewidth=1.8,
         linestyle="--", zorder=3,
-        label=f"L_0 support ({int(margin_frac * 100)}% margin)",
+        label=(f"L_0 support\n"
+               f"x=[{x_min:.1f}, {x_max:.1f}]\n"
+               f"y=[{y_min:.1f}, {y_max:.1f}]"),
     )
     ax.add_patch(rect)
 
@@ -65,14 +89,11 @@ def plot_network(margin_frac=0.30, fname="ema_network.png"):
     ax.axhline(min(ys), color="0.8", linewidth=0.5, zorder=0)
     ax.axhline(max(ys), color="0.8", linewidth=0.5, zorder=0)
 
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
+    ax.set_xlabel("x (km)", fontsize=fontsize_label)
+    ax.set_ylabel("y (km)", fontsize=fontsize_label)
+    ax.tick_params(labelsize=fontsize_tick)
     ax.set_aspect("equal")
-    ax.legend(loc="upper right", fontsize=9)
-    ax.set_title(
-        f"EMA network ({len(nodes)} nodes, {len(edges)} edges)\n"
-        f"region = ({x_min:.1f}, {x_max:.1f}, {y_min:.1f}, {y_max:.1f})"
-    )
+    ax.legend(loc="lower left", fontsize=fontsize_legend)
 
     out_path = RESULTS / fname
     fig.tight_layout()

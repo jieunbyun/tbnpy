@@ -26,7 +26,8 @@ examples/EMA_aftershock/
 │
 ├── l.py  m.py  k.py  r.py  v.py  a.py  d.py  x.py  s.py   <- one node type
 ├── s01_define_model.py       <- assemble Variable + probability objects
-├── s02_cal_s_x.py            <- estimate P(S_t | X_{0,n} = 0) by surgery
+├── s02_forward_inference.py  <- unconditional forward sampling; stats + histograms
+├── s03_cal_s_x0.py           <- estimate P(S_t | X_{0,n} = 0) by surgery
 ├── plot_network.py           <- draw network and L_0 support rectangle
 └── test_variables.py         <- unit tests, 3-4 cases per method
 ```
@@ -50,7 +51,7 @@ or *inactive* (delta at zero).
 | `v.py` | `V`       | `V_t`              | `K`                        | Uniform on `[0, 2π)`, delta-at-0 if inactive.                         |
 | `a.py` | `A`       | `A_{t,n}`          | `M_t, L_x_t, L_y_t`        | Lognormal PGA (Campbell-1997 / Lee-2011). Edge midpoint is an init arg. |
 | `d.py` | `D0`      | `D_{0,n}`          | `A_{0,n}`                  | Lognormal Park-Ang damage (Ghosh-2015 single shock).                  |
-|        | `Dt`      | `D_{t,n}`          | `A_{t,n}, D_{t-1,n}`       | Multi-shock lognormal. Carries `D_{t-1,n}` if `A = 0`.                |
+|        | `Dt`      | `D_{t,n}`          | `A_{t,n}, D_{t-1,n}`       | Truncated lognormal (lower bound = `D_{t-1,n}`, enforcing `D_t >= D_{t-1}`). Carries `D_{t-1,n}` if `A = 0`. |
 | `x.py` | `X`       | `X_{i,n}` (binary) | `D_{i,n}`                  | Deterministic threshold indicator (`X = 1` iff `D < 0.4`).            |
 | `s.py` | `S`       | `S_i` (states `0..max_st`) | `X_{i,1}, ..., X_{i,N}`    | RSR-based classifier (`rsr.classify_samples_with_indices`) with optional `s_fun` fallback for unknown samples. Unresolved samples receive `unknown_state` (default `-1`, deliberately outside the valid range). |
 
@@ -74,14 +75,19 @@ so unresolved cases can never be mistaken for state `0`.
 
 ### `s01_define_model.py` — model assembly
 
-Provides three helper functions:
+Provides the following helper functions:
 
 * `load_topology(edge_subset=None)` — read `data/nodes.json` and
   `data/edges.json`, compute edge midpoints.
 * `load_rsr_refs(max_st=2, device="cpu")` — load the upper/lower reference
   tensors that drive the multi-state classifier in `s.py`.
-* `define_variables(edge_names, K_max)` and `define_probs(...)` — build the
-  `varis` and `probs` dicts. Variable keys follow:
+* `make_s_fun(dests=None)` — build and return an `s_fun` callable (uses
+  `ndtools.fun_binary_graph.eval_population_accessibility`) that resolves
+  component states left unknown by the RSR classifier. Loads the graph from
+  `data/` once at construction time. Default destinations: `["n22", "n66"]`.
+* `define_variables(edge_names, K_max)` and `define_probs(..., s_fun=None)` —
+  build the `varis` and `probs` dicts. `s_fun` is forwarded to every `S` node.
+  Variable keys follow:
 
     L_x_0, L_y_0, M_0, K, S_0
     A_0_{n}, D_0_{n}, X_0_{n}                       for n in edges
@@ -96,6 +102,41 @@ just instantiates everything and prints counts).
 ```bash
 cd examples/EMA_aftershock
 python s01_define_model.py
+```
+
+### `s02_forward_inference.py` — unconditional forward sampling
+
+Samples all BN variables with no evidence and saves:
+
+* `results/forward_stats_Kmax{K}_maxst{M}_n{N}.csv` — long-form summary
+  statistics. One row per state for discrete variables (`variable`, `type`,
+  `state`, `prob`, `count`); one row per variable for continuous (`variable`,
+  `type`, `mean`, `std`, `n`).
+* `results/histograms/Kmax{K}_maxst{M}_n{N}/` — one PNG per variable,
+  organised into sub-directories:
+
+  | Sub-directory | Contents |
+  | ------------- | -------- |
+  | `global/`     | `L_x_0`, `L_y_0`, `M_0`, `K` |
+  | `S/`          | `S_0` … `S_{K_max}` |
+  | `A/`          | `A_{t}_{n}` for all `t`, `n` |
+  | `D/`          | `D_{t}_{n}` for all `t`, `n` |
+  | `X/`          | `X_{t}_{n}` for all `t`, `n` |
+  | `t{i}/`       | `R_i`, `V_i`, `L_x_i`, `L_y_i`, `M_i` |
+
+**Online accumulators.** Mean and variance are updated with Welford's
+parallel algorithm so batching does not affect numerical accuracy.
+Histogram bin edges are fixed from the first batch and reused, keeping
+memory usage proportional to the number of variables, not the sample size.
+
+**Caching.** If both the CSV and histogram directory already exist the
+script exits early. Pass `force_recompute=True` to redo.
+
+**Example usage:**
+
+```bash
+cd examples/EMA_aftershock
+python s02_forward_inference.py
 ```
 
 ### `plot_network.py` — visualise the network and `L_0` support
@@ -116,7 +157,7 @@ python plot_network.py
 To use a different margin, edit the call to `plot_network(margin_frac=...)`
 in the `__main__` block, or import the function from another script.
 
-### `s02_cal_s_x.py` — conditional inference by CPT surgery
+### `s03_cal_s_x0.py` — conditional inference by CPT surgery
 
 For each edge `n`, estimates `P(S_t | X_{0,n} = 0)` for all `t ∈ {0, ..., K_max}`.
 
@@ -167,7 +208,7 @@ compute `P(S_t | X_{0,n} = 0)`).
 
 ```bash
 cd examples/EMA_aftershock
-python s02_cal_s_x.py
+python s03_cal_s_x0.py
 ```
 
 To run on a GPU, prefix with `USE_CUDA=1` (PowerShell: `$env:USE_CUDA=1`).
@@ -199,16 +240,18 @@ status `1` if any test fails.
             │                      │
             ▼                      ▼
    ┌────────────────────────────────────────┐
-   │  s01_define_model.py                    │
+   │  s01_define_model.py                   │
    │     load_topology  load_rsr_refs       │
+   │     make_s_fun                         │
    │     define_variables  define_probs     │
    └────────────────────────────────────────┘
             │ varis, probs
             ▼
-   ┌─────────────────────────┐    ┌─────────────────────────┐
-   │  test_variables.py      │    │  s02_cal_s_x.py         │
-   │  (per-class assertions) │    │  P(S_t | X_{0,n} = 0)   │
-   └─────────────────────────┘    └─────────────────────────┘
+   ┌──────────────────┐  ┌──────────────────────┐  ┌──────────────────────┐
+   │ test_variables.py│  │ s02_forward_         │  │  s03_cal_s_x0.py     │
+   │ (per-class tests)│  │ inference.py         │  │  P(S_t|X_{0,n}=0)    │
+   └──────────────────┘  │ stats + histograms   │  └──────────────────────┘
+                         └──────────────────────┘
 ```
 
 ## Dependencies

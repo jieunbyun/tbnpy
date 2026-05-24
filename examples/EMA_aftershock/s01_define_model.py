@@ -34,6 +34,13 @@ if RSR_REPO.exists() and str(RSR_REPO) not in sys.path:
 
 from tbnpy import variable
 
+try:
+    from ndtools import fun_binary_graph as fbg  # type: ignore[import]
+    from ndtools.graphs import build_graph        # type: ignore[import]
+except ImportError:
+    fbg = None
+    build_graph = None
+
 import l as l_mod
 import m as m_mod
 import k as k_mod
@@ -82,11 +89,46 @@ def load_rsr_refs(max_st=2, device="cpu"):
     return refs_upper, refs_lower
 
 
-def region_from_nodes(nodes, margin_frac=0.30):
+def make_s_fun(dests=None):
+    """Build and return an ``s_fun`` callable for use with :class:`s_mod.S`.
+
+    Uses ``fbg.eval_population_accessibility`` (ndtools) to resolve component
+    states that the RSR classifier leaves unknown.
+    """
+    assert fbg is not None and build_graph is not None, (
+        "ndtools is not importable; make sure the ndtools repo is on sys.path"
+    )
+    if dests is None:
+        dests = ["n22", "n66"]
+
+    with open(DATA_DIR / "nodes.json") as f:
+        nodes = json.load(f)
+    with open(DATA_DIR / "edges.json") as f:
+        edges = json.load(f)
+    with open(DATA_DIR / "probs_eq.json") as f:
+        probs_dict = json.load(f)
+
+    G_base = build_graph(nodes, edges, probs_dict)
+
+    def s_fun(comps_st):
+        conn_pop_ratio, sys_st, _ = fbg.eval_population_accessibility(
+            comps_st, G_base, dests,
+            avg_speed=60.0,
+            target_time_max=0.25,
+            target_pop_max=[0.95, 0.99],
+            length_attr="length_km",
+            population_attr="population",
+        )
+        return conn_pop_ratio, sys_st, None
+
+    return s_fun
+
+
+def region_from_nodes(nodes, margin_frac=0.20):
     """Bounding box of node coordinates, expanded by ``margin_frac`` on each side.
 
     ``margin_frac`` is relative to the span of the data in that axis, so a
-    value of 0.30 adds 30% of the x-range on the left and right, and 30%
+    value of 0.20 adds 20% of the x-range on the left and right, and 20%
     of the y-range at the top and bottom.
     """
     xs = [n["x"] for n in nodes.values()]

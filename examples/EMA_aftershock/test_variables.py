@@ -659,15 +659,21 @@ def test_Dt_sample():
     Cs, lp = obj.sample(pars)
     assert abs(Cs.item() - 0.7) < 1e-6 and abs(lp.item()) < 1e-6
 
-    # 2) positive A -> finite samples > 0
+    # 2) positive A -> finite samples >= D_prev (truncation enforced)
     pars = torch.tensor([[0.3, 0.2]] * 1000)
     Cs, _ = obj.sample(pars)
     assert (Cs > 0).all() and torch.isfinite(Cs).all()
+    assert (Cs >= pars[:, 1]).all()
 
     # 3) boundary: very tiny A still produces finite values
     pars = torch.tensor([[1e-6, 0.5]] * 10)
     Cs, _ = obj.sample(pars)
     assert torch.isfinite(Cs).all()
+
+    # 4) extreme: D_prev=1.0 + weak aftershock -> D_t >= 1.0 (previously broken)
+    pars = torch.tensor([[0.015, 1.0]] * 1000)
+    Cs, _ = obj.sample(pars)
+    assert (Cs >= 1.0).all() and torch.isfinite(Cs).all()
 
 
 def test_Dt_log_prob():
@@ -687,7 +693,11 @@ def test_Dt_log_prob():
     Cs = torch.tensor([[0.5, 0.3, 0.2]])
     assert torch.isfinite(obj.log_prob(Cs)).all()
 
-    # 4) active + d = 0 -> -inf
+    # 4) active + d < D_prev (truncation violated) -> -inf
+    Cs = torch.tensor([[0.1, 0.3, 0.2]])   # d=0.1 < D_prev=0.2
+    assert math.isinf(obj.log_prob(Cs).item())
+
+    # 5) active + d = 0 -> -inf
     Cs = torch.tensor([[0.0, 0.3, 0.2]])
     assert math.isinf(obj.log_prob(Cs).item())
 

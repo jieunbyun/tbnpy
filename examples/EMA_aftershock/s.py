@@ -28,8 +28,9 @@ from typing import Callable, Dict, Optional, Sequence
 import torch
 
 try:
-    from rsr.rsr import classify_samples_with_indices
-except Exception:  # rsr not on path
+    from rsr.rsr import classify_samples_with_indices  # type: ignore[import]
+except ImportError:
+    # Optional dependency — install with: pip install -e <path-to-rsr-repo>
     classify_samples_with_indices = None
 
 
