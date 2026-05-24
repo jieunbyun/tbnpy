@@ -8,21 +8,31 @@ def get_ancestor_order(probs, query_nodes):
     Compute all ancestor nodes of the given query nodes and return them in
     a valid topological order (i.e., parents appear before their children).
 
+    Supports probability objects that own multiple child variables: a node N
+    owning childs [X, Y] is treated as a single graph vertex, and any other
+    node listing X (or Y) as a parent variable induces an edge N → that node.
+    When multiple parent variables of a node trace back to the same owning
+    node, the edge is counted exactly once.
+
     Args:
         probs (dict):
             A dictionary mapping node names (strings) to probability objects.
             Each probability object must define:
-                - childs: a list containing the child variable(s)
+                - childs: a list of child variable objects (each has `.name`)
                 - parents: a list of parent variable objects (each has `.name`)
+            Every variable must appear as a child of exactly one probability
+            object.
 
         query_nodes (list[str] or set[str]):
-            Node names whose marginal distributions we want to infer.
+            Node names (keys in `probs`) whose marginal distributions we want
+            to infer.
 
     Returns:
         list[str]:
-            A topologically sorted list of all ancestors of query_nodes,
-            including the query nodes themselves. The order ensures that
-            if X is a parent of Y, then X appears before Y.
+            A topologically sorted list of all ancestor node names of
+            query_nodes, including the query nodes themselves. The order
+            ensures that if N1 is a parent of N2 (i.e., a child variable of
+            N1 appears in N2.parents), then N1 appears before N2.
     """
 
     # 1. Validate inputs
@@ -31,63 +41,77 @@ def get_ancestor_order(probs, query_nodes):
     assert isinstance(query_nodes, (list, set)), \
         "`query_nodes` must be a list or a set of node names."
 
-    # ensure all elements are strings
     assert all(isinstance(q, str) for q in query_nodes), \
         "`query_nodes` must contain only strings."
 
-    # ensure nodes exist in the network
     missing = [q for q in query_nodes if q not in probs]
     assert len(missing) == 0, \
         f"Query nodes not found in `probs`: {missing}"
 
-    # Validate structure of each probability object
     for name, obj in probs.items():
         assert hasattr(obj, "childs"), f"Node '{name}' must have attribute `childs`."
         assert hasattr(obj, "parents"), f"Node '{name}' must have attribute `parents`."
         assert isinstance(obj.parents, list), f"`parents` of node '{name}' must be a list."
 
-        # each parent must have a `.name`
+        for child in obj.childs:
+            assert hasattr(child, "name"), \
+                f"Child of '{name}' does not have attribute `.name`."
+
         for parent in obj.parents:
             assert hasattr(parent, "name"), \
                 f"Parent of '{name}' does not have attribute `.name`."
 
-    # 2. DFS: Identify ancestor nodes (recursively)
-    ancestors = set()
+    # 2. Build variable -> owning-node map (handles multi-child nodes)
+    var_to_node = {}
+    for node_name, prob in probs.items():
+        for child_var in prob.childs:
+            vname = child_var.name
+            assert vname not in var_to_node, (
+                f"Variable '{vname}' appears as child of more than one probability object "
+                f"(in '{var_to_node[vname]}' and '{node_name}')."
+            )
+            var_to_node[vname] = node_name
+
+    # 3. DFS: identify ancestor NODES (not variables)
+    visited = set(query_nodes)
     stack = list(query_nodes)
 
     while stack:
         node = stack.pop()
 
-        # assert that this node exists in the graph
-        assert node in probs, f"Node '{node}' missing from `probs` during traversal."
-
-        parent_vars = probs[node].parents
-
-        for var in parent_vars:
+        for var in probs[node].parents:
             pname = var.name
-            if pname not in ancestors:
-                ancestors.add(pname)
-                stack.append(pname)
+            assert pname in var_to_node, (
+                f"Parent variable '{pname}' of node '{node}' does not appear as a child "
+                f"of any probability object."
+            )
+            parent_node = var_to_node[pname]
+            if parent_node not in visited:
+                visited.add(parent_node)
+                stack.append(parent_node)
 
-    # include query nodes themselves
-    ancestors.update(query_nodes)
+    ancestors = visited
 
-    # 3. Build adjacency lists for the induced ancestral subgraph
-    children_of = {n: [] for n in ancestors}
+    # 4. Build adjacency lists at the NODE level (deduplicated edges)
+    children_of = {n: set() for n in ancestors}
     indegree = {n: 0 for n in ancestors}
 
-    for child in ancestors:
-        for parent in probs[child].parents:
-            pname = parent.name
-            if pname in ancestors:
-                # parent → child edge
-                children_of[pname].append(child)
-                indegree[child] += 1
+    for child_node in ancestors:
+        parent_nodes = set()
+        for parent_var in probs[child_node].parents:
+            parent_node = var_to_node[parent_var.name]
+            # Skip self-loops; we don't model a node as its own parent.
+            if parent_node == child_node:
+                continue
+            if parent_node in ancestors:
+                parent_nodes.add(parent_node)
 
-    # 4. Topological sort (Kahn’s algorithm)
+        for parent_node in parent_nodes:
+            children_of[parent_node].add(child_node)
+        indegree[child_node] = len(parent_nodes)
+
+    # 5. Topological sort (Kahn's algorithm)
     ordering = []
-
-    # nodes with no parents (root ancestors)
     queue = [n for n in ancestors if indegree[n] == 0]
 
     assert len(queue) > 0, \
@@ -102,7 +126,6 @@ def get_ancestor_order(probs, query_nodes):
             if indegree[child] == 0:
                 queue.append(child)
 
-    # 5. Final consistency checks
     assert len(ordering) == len(ancestors), \
         "Topological sorting failed; a cycle may exist in the ancestor subgraph."
 

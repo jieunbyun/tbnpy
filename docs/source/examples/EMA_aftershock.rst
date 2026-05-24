@@ -8,6 +8,13 @@ a system-state classifier based on RSR reference sets.
 
 The full mathematical model is described in
 :download:`EMA_aftershock_models.pdf <../../../examples/EMA_aftershock/data/EMA_aftershock_models.pdf>`.
+The EMA benchmark network and the hypothetical areal seismic source zone are shown below:
+
+.. image:: ../../../examples/EMA_aftershock/data/ema_network.png
+   :alt: EMA highway network and seismic source zone
+   :align: center
+   :width: 650px
+
 The main BN structure is:
 
 .. image:: ../../../examples/EMA_aftershock/data/BN_EMA_aftershock.png
