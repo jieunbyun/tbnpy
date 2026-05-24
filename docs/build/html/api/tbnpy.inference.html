@@ -206,8 +206,8 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../examples/abcde_example.html">ABCDE example</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../examples/EMA_aftershock.html">EMA aftershock example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/abcde_example.html">ABCDE example</a></li>
 </ul>
 
 </div>
@@ -403,9 +403,11 @@ and whose rows are evidence scenarios.</p>
 <p>Two implementations are included:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#sample_evidence_v0" title="sample_evidence_v0"><code class="xref py py-func docutils literal notranslate"><span class="pre">sample_evidence_v0()</span></code></a>: uses <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code> when parents exist (vectorised),
-and uses <code class="docutils literal notranslate"><span class="pre">prob.log_prob</span></code> for observed children.</p></li>
-<li><p><a class="reference internal" href="#sample_evidence" title="sample_evidence"><code class="xref py py-func docutils literal notranslate"><span class="pre">sample_evidence()</span></code></a>: uses only <code class="docutils literal notranslate"><span class="pre">prob.sample</span></code> (no <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code>), which is
-sometimes easier to maintain/debug.</p></li>
+and uses <code class="docutils literal notranslate"><span class="pre">prob.log_prob</span></code> for observed children. Returns the <strong>full ancestral subgraph</strong>
+(samples for every ancestor are retained).</p></li>
+<li><p><a class="reference internal" href="#sample_evidence" title="sample_evidence"><code class="xref py py-func docutils literal notranslate"><span class="pre">sample_evidence()</span></code></a>: uses only <code class="docutils literal notranslate"><span class="pre">prob.sample</span></code> (no <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code>), processes
+samples in batches, and returns <strong>only the query nodes</strong> — intermediate ancestor samples
+are discarded after each batch to keep peak memory bounded.</p></li>
 </ul>
 <dl class="py function">
 <dt class="sig sig-object py" id="sample_evidence_v0">
@@ -465,26 +467,35 @@ shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span
 
 <dl class="py function">
 <dt class="sig sig-object py" id="sample_evidence">
-<span class="sig-name descname"><span class="pre">sample_evidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence_df</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#sample_evidence" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample_evidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50_000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#sample_evidence" title="Link to this definition">¶</a></dt>
 <dd><p>Forward-sample all ancestors of <code class="docutils literal notranslate"><span class="pre">query_nodes</span></code> under multiple evidence rows using <strong>only</strong>
-<code class="docutils literal notranslate"><span class="pre">prob.sample</span></code> (no <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code>).</p>
+<code class="docutils literal notranslate"><span class="pre">prob.sample</span></code> (no <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code>), and return samples for the <strong>query nodes only</strong>.
+Intermediate ancestor samples are held only for the duration of the current batch and discarded
+afterwards, keeping peak memory bounded by <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> rather than <code class="docutils literal notranslate"><span class="pre">n_sample</span></code>.</p>
 <section id="id6">
 <h4>Parameters<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
 <dl class="simple">
 <dt>probs</dt><dd><p>Mapping from node name → probability object.</p>
 </dd>
-<dt>query_nodes</dt><dd><p>Node names of interest.</p>
+<dt>query_nodes</dt><dd><p>Node names whose samples will be returned. All ancestors are still sampled internally
+(they are required to generate query-node samples), but are not retained in the output.</p>
 </dd>
 <dt>n_sample</dt><dd><p>Number of samples per evidence row.</p>
 </dd>
-<dt>evidence_df</dt><dd><p>A pandas-like DataFrame with evidence columns.</p>
+<dt>evidence_df</dt><dd><p>A pandas-like DataFrame with evidence columns. Each column name must match a variable name.
+Shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_evidence_vars)</span></code>.</p>
+</dd>
+<dt>batch_size</dt><dd><p>Maximum number of samples processed per batch (per evidence row). Controls peak memory:
+at any time, only <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">min(batch_size,</span> <span class="pre">n_sample))</span></code> samples per ancestor variable are
+held in memory. Defaults to <code class="docutils literal notranslate"><span class="pre">50_000</span></code>.</p>
 </dd>
 </dl>
 </section>
 <section id="id7">
 <h4>Returns<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
 <dl class="simple">
-<dt>dict</dt><dd><p><code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">prob_object}</span></code> for the ancestral subgraph. Each returned object contains:</p>
+<dt>dict</dt><dd><p><code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">prob_object}</span></code> containing <strong>only the query nodes</strong> (not their ancestors).
+Each returned object contains:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">prob_object.Cs</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code> (non-root nodes)
 or <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">n_childs)</span></code> (root / observed child cases)</p></li>
@@ -493,14 +504,45 @@ or <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <
 </dd>
 </dl>
 </section>
-<section id="implementation-sketch">
-<h4>Implementation sketch<a class="headerlink" href="#implementation-sketch" title="Link to this heading">¶</a></h4>
+<section id="id8">
+<h4>How sampling is performed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
+<ol class="arabic simple">
+<li><p>Compute ancestor order using <a class="reference internal" href="#get_ancestor_order" title="get_ancestor_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_ancestor_order()</span></code></a>.</p></li>
+<li><p>Deep-copy the needed probability objects (used to call <code class="docutils literal notranslate"><span class="pre">P.sample</span></code> only; <code class="docutils literal notranslate"><span class="pre">.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">.ps</span></code>
+are populated on query nodes at the end).</p></li>
+<li><p>Iterate over batches of size <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> (outer loop). Within each batch, walk the nodes
+in topological order (inner loop), keeping a temporary <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> dictionary
+<code class="docutils literal notranslate"><span class="pre">{var_name:</span> <span class="pre">tensor(n_evi,</span> <span class="pre">n_batch)}</span></code> that holds only the current batch’s ancestor values.</p></li>
+<li><p>For each node in the inner loop:</p>
 <ul class="simple">
-<li><p>Root nodes are sampled by generating <code class="docutils literal notranslate"><span class="pre">n_evi</span> <span class="pre">*</span> <span class="pre">n_sample</span></code> samples and reshaping to <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">...)</span></code>.</p></li>
-<li><p>Non-root nodes build a parent matrix <code class="docutils literal notranslate"><span class="pre">Cs_par_flat</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi*n_sample,</span> <span class="pre">n_parents)</span></code>,
-then call <code class="docutils literal notranslate"><span class="pre">prob.sample(Cs_pars=Cs_par_flat)</span></code>, and reshape outputs back to evidence form.</p></li>
-<li><p>Observed nodes compute log-probability via <code class="docutils literal notranslate"><span class="pre">prob.log_prob</span></code> without sampling.</p></li>
+<li><p><strong>Observed node</strong> (<code class="docutils literal notranslate"><span class="pre">node</span> <span class="pre">in</span> <span class="pre">evidence_df.columns</span></code>): broadcast the observed values across
+samples and evaluate <code class="docutils literal notranslate"><span class="pre">prob.log_prob</span></code> on the assembled <code class="docutils literal notranslate"><span class="pre">[childs</span> <span class="pre">|</span> <span class="pre">parents]</span></code> rows.</p></li>
+<li><p><strong>Root node</strong> (no parents): generate <code class="docutils literal notranslate"><span class="pre">n_evi</span> <span class="pre">*</span> <span class="pre">n_batch</span></code> samples via <code class="docutils literal notranslate"><span class="pre">P.sample</span></code> and
+reshape to <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_batch,</span> <span class="pre">n_childs)</span></code>.</p></li>
+<li><p><strong>Non-root node</strong>: assemble parent matrix of shape <code class="docutils literal notranslate"><span class="pre">(n_evi</span> <span class="pre">*</span> <span class="pre">n_batch,</span> <span class="pre">n_parents)</span></code> from
+<code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> (or from <code class="docutils literal notranslate"><span class="pre">evidence_df</span></code> if a parent is observed), call
+<code class="docutils literal notranslate"><span class="pre">P.sample(Cs_pars=...)</span></code>, and reshape back to evidence form.</p></li>
+<li><p>If the node is a query node, append <code class="docutils literal notranslate"><span class="pre">Cs_batch</span></code> and <code class="docutils literal notranslate"><span class="pre">ps_batch</span></code> to the per-query
+accumulators.</p></li>
 </ul>
+</li>
+<li><p>After all batches complete, concatenate the per-batch tensors for each query node along
+the sample dimension (<code class="docutils literal notranslate"><span class="pre">dim=1</span></code>) and attach them as <code class="docutils literal notranslate"><span class="pre">P.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">P.ps</span></code>.</p></li>
+</ol>
+</section>
+<section id="id9">
+<h4>Parent handling<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h4>
+<p>For each parent variable:</p>
+<ul class="simple">
+<li><p>if the parent is observed in <code class="docutils literal notranslate"><span class="pre">evidence_df</span></code>, the observed values are broadcast across
+samples,</p></li>
+<li><p>otherwise, sampled values for the current batch are pulled from <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code>.</p></li>
+</ul>
+</section>
+<section id="id10">
+<h4>Important<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h4>
+<p>The module assumes each variable appears as a <strong>child</strong> of exactly one probability object.
+If a variable is a child in multiple objects, an <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> is raised.</p>
 </section>
 </dd></dl>
 
