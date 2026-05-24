@@ -98,10 +98,18 @@ def region_from_nodes(nodes, margin_frac=0.30):
     return (x_min - dx, x_max + dx, y_min - dy, y_max + dy)
 
 
-def define_variables(edge_names, K_max=3):
-    """Create all tbnpy Variable instances."""
+def define_variables(edge_names, K_max=3, max_st=2):
+    """Create all tbnpy Variable instances.
+
+    System-state variables ``S_i`` take values ``{0, 1, ..., max_st}`` —
+    states are 0-indexed, matching the RSR ref-dict convention where
+    ``refs_up_{s}`` / ``refs_low_{s-1}`` describe the boundary between
+    ``S >= s`` and ``S <= s - 1``.
+    """
     varis = {}
     cont = lambda name: variable.Variable(name=name, values=(-torch.inf, torch.inf))
+
+    sys_states = list(range(max_st + 1))  # 0..max_st
 
     # Mainshock
     varis["L_x_0"] = cont("L_x_0")
@@ -113,7 +121,7 @@ def define_variables(edge_names, K_max=3):
         varis[f"A_0_{n}"] = cont(f"A_0_{n}")
         varis[f"D_0_{n}"] = cont(f"D_0_{n}")
         varis[f"X_0_{n}"] = variable.Variable(name=f"X_0_{n}", values=[0, 1])
-    varis["S_0"] = variable.Variable(name="S_0", values=[0, 1, 2])
+    varis["S_0"] = variable.Variable(name="S_0", values=sys_states)
 
     # Aftershock slots
     for t in range(1, K_max + 1):
@@ -128,7 +136,7 @@ def define_variables(edge_names, K_max=3):
             varis[f"X_{t}_{n}"] = variable.Variable(
                 name=f"X_{t}_{n}", values=[0, 1]
             )
-        varis[f"S_{t}"] = variable.Variable(name=f"S_{t}", values=[0, 1, 2])
+        varis[f"S_{t}"] = variable.Variable(name=f"S_{t}", values=sys_states)
 
     return varis
 
@@ -141,9 +149,12 @@ def define_probs(varis, edges, midpoints, region,
     probs = {}
 
     # ---- Mainshock ----
+    x_min, x_max, y_min, y_max = region
     probs["L_x_0"] = l_mod.L0(
-        childs=[varis["L_x_0"], varis["L_y_0"]],
-        region=region, device=device,
+        childs=[varis["L_x_0"]], low=x_min, high=x_max, device=device,
+    )
+    probs["L_y_0"] = l_mod.L0(
+        childs=[varis["L_y_0"]], low=y_min, high=y_max, device=device,
     )
     probs["M_0"] = m_mod.M0(childs=[varis["M_0"]], device=device)
     probs["K"] = k_mod.K(
@@ -184,10 +195,14 @@ def define_probs(varis, edges, midpoints, region,
             slot_idx=t, device=device,
         )
         probs[f"L_x_{t}"] = l_mod.Lt(
-            childs=[varis[f"L_x_{t}"], varis[f"L_y_{t}"]],
-            parents=[varis["L_x_0"], varis["L_y_0"],
-                     varis[f"R_{t}"], varis[f"V_{t}"]],
-            device=device,
+            childs=[varis[f"L_x_{t}"]],
+            parents=[varis["L_x_0"], varis[f"R_{t}"], varis[f"V_{t}"]],
+            axis="x", device=device,
+        )
+        probs[f"L_y_{t}"] = l_mod.Lt(
+            childs=[varis[f"L_y_{t}"]],
+            parents=[varis["L_y_0"], varis[f"R_{t}"], varis[f"V_{t}"]],
+            axis="y", device=device,
         )
         probs[f"M_{t}"] = m_mod.Mt(
             childs=[varis[f"M_{t}"]],
@@ -223,13 +238,14 @@ def define_probs(varis, edges, midpoints, region,
 
 if __name__ == "__main__":
     device = "cuda" if os.environ.get("USE_CUDA", "0") == "1" else "cpu"
-    K_max = 2  # keep small for the smoke test
+    K_max = 2     # keep small for the smoke test
+    max_st = 2    # S in {0, 1, 2}; matches the rsr_res files
 
     nodes, edges, midpoints = load_topology()
     region = region_from_nodes(nodes)
-    refs_upper, refs_lower = load_rsr_refs(max_st=2, device=device)
+    refs_upper, refs_lower = load_rsr_refs(max_st=max_st, device=device)
 
-    varis = define_variables(list(edges.keys()), K_max=K_max)
+    varis = define_variables(list(edges.keys()), K_max=K_max, max_st=max_st)
     probs = define_probs(varis, edges, midpoints, region,
                          refs_upper, refs_lower, K_max=K_max, device=device)
 

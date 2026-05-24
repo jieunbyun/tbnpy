@@ -13,7 +13,6 @@ Run as::
 The figure is saved to ``results/ema_network.png``.
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -23,7 +22,7 @@ from matplotlib.patches import Rectangle
 BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE))
 
-from s1_define_model import load_topology, region_from_nodes  # noqa: E402
+from s01_define_model import load_topology, region_from_nodes  # noqa: E402
 
 
 RESULTS = BASE / "results"

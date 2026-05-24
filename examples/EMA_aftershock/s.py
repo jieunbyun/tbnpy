@@ -14,7 +14,13 @@ The logic mirrors ``rsr.get_comp_cond_sys_prob_multi``:
 The class accepts an optional ``s_fun(comps_dict) -> (_, sys_st, _)``
 callable to resolve any samples that remain unknown after the last
 level. If ``s_fun`` is ``None``, unknown samples are assigned to
-``unknown_state`` (which defaults to ``0``).
+``unknown_state`` (default ``-1``).
+
+System states are 0-indexed: valid values are ``{0, 1, ..., max_st}``.
+``unknown_state = -1`` is therefore deliberately outside this range, so
+unresolved samples can never be mistaken for a real classification (a
+common failure mode if one defaulted to ``0`` and forgot to pass
+``s_fun``).
 """
 
 from typing import Callable, Dict, Optional, Sequence
@@ -38,7 +44,7 @@ class S:
         refs_dict_lower: Dict[int, torch.Tensor],
         row_names: Sequence[str],
         s_fun: Optional[Callable[[Dict[str, int]], tuple]] = None,
-        unknown_state: int = 0,
+        unknown_state: int = -1,
         device: str = "cpu",
     ):
         assert len(childs) == 1
