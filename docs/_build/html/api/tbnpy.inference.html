@@ -1,0 +1,644 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="tbnpy.adaptiveMH" href="tbnpy.adaptiveMH.html"><link rel="prev" title="tbnpy.cpt" href="tbnpy.cpt.html">
+        <link rel="canonical" href="https://jieunbyun.github.io/tbnpy/api/tbnpy.inference.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>tbnpy.inference - tbnpy 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">tbnpy 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">tbnpy 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/repo_structure.html">Repository structure</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">tbnpy</a><input aria-label="Toggle navigation of tbnpy" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="tbnpy.html">tbnpy package</a><input aria-label="Toggle navigation of tbnpy package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="custom_probability_models.html">Custom probability models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html">tbnpy.cpt</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">tbnpy.inference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.adaptiveMH.html">tbnpy.adaptiveMH</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/EMA_aftershock.html">EMA aftershock example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/abcde_example.html">ABCDE example</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/tbnpy.inference.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="tbnpy-inference">
+<h1>tbnpy.inference<a class="headerlink" href="#tbnpy-inference" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>This module provides lightweight <strong>forward-sampling utilities</strong> for a Bayesian network defined by
+a dictionary of <em>probability objects</em> (typically <code class="xref py py-class docutils literal notranslate"><span class="pre">Cpt</span></code> instances, but any object
+with a compatible interface works).</p>
+<p>A <em>probability object</em> <code class="docutils literal notranslate"><span class="pre">P</span></code> is assumed to expose:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">P.childs</span></code> : list of child variables (each variable has <code class="docutils literal notranslate"><span class="pre">.name</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">P.parents</span></code> : list of parent variables (each variable has <code class="docutils literal notranslate"><span class="pre">.name</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">P.sample(...)</span></code> : sampling method (signature depends on whether parents exist)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">P.log_prob(...)</span></code> : log-probability evaluation for rows of <code class="docutils literal notranslate"><span class="pre">[childs</span> <span class="pre">|</span> <span class="pre">parents]</span></code></p></li>
+<li><p>(optionally) <code class="docutils literal notranslate"><span class="pre">P.sample_evidence(...)</span></code> : evidence-aligned sampling</p></li>
+</ul>
+<p>The key idea is to:</p>
+<ol class="arabic simple">
+<li><p>collect all ancestors of query nodes,</p></li>
+<li><p>order them topologically (parents before children),</p></li>
+<li><p>forward-sample along that order in batches, retaining samples only for the <strong>query nodes</strong>
+(intermediate ancestor samples are discarded after each batch to keep memory bounded).</p></li>
+</ol>
+</section>
+<section id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>probs</strong>: <code class="docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">ProbObject]</span></code> mapping node name → probability object.</p></li>
+<li><p><strong>node name</strong>: a string key in <code class="docutils literal notranslate"><span class="pre">probs</span></code>. In this module, node names are treated as <em>variable names</em>.</p></li>
+<li><p><strong>Cs</strong>: sampled assignments stored as <strong>composite-state indices</strong>.</p></li>
+<li><p><strong>ps</strong>: stored per-sample probability values. In most usages here, <code class="docutils literal notranslate"><span class="pre">ps</span></code> is <strong>log probability</strong>.</p></li>
+</ul>
+</section>
+<section id="quick-start">
+<h2>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading">¶</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># probs: {&quot;X&quot;: P(X), &quot;Y&quot;: P(Y|X), ...}</span>
+<span class="n">ordered</span> <span class="o">=</span> <span class="n">get_ancestor_order</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">query_nodes</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Y&quot;</span><span class="p">})</span>
+<span class="n">probs_s</span> <span class="o">=</span> <span class="n">sample</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">query_nodes</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Y&quot;</span><span class="p">},</span> <span class="n">n_sample</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span>
+
+<span class="c1"># probs_s[&quot;Y&quot;].Cs contains samples for Y and its parents (if any)</span>
+<span class="c1"># probs_s[&quot;Y&quot;].ps contains per-sample (log) probabilities</span>
+</pre></div>
+</div>
+</section>
+<section id="public-api">
+<h2>Public API<a class="headerlink" href="#public-api" title="Link to this heading">¶</a></h2>
+<section id="topological-utilities">
+<h3>Topological utilities<a class="headerlink" href="#topological-utilities" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="get_ancestor_order">
+<span class="sig-name descname"><span class="pre">get_ancestor_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#get_ancestor_order" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the set of all ancestors of the query nodes and return them in a valid
+topological order (parents appear before children).</p>
+<section id="parameters">
+<h4>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>probs</dt><dd><p>Mapping from node name → probability object. Each probability object must provide:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">childs</span></code>: list of child variables</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parents</span></code>: list of parent variables, each having <code class="docutils literal notranslate"><span class="pre">.name</span></code></p></li>
+</ul>
+</dd>
+<dt>query_nodes</dt><dd><p>Iterable of node names whose marginals (or descendant computations) are of interest.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h4>Returns<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>list[str]</dt><dd><p>Topologically sorted list of all ancestors of <code class="docutils literal notranslate"><span class="pre">query_nodes</span></code>, including the query nodes.</p>
+</dd>
+</dl>
+</section>
+<section id="notes">
+<h4>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>The function performs validation and will raise <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> if inputs are inconsistent
+(e.g., missing nodes, missing attributes).</p></li>
+<li><p>Cycles are detected indirectly via topological sorting consistency checks.</p></li>
+</ul>
+</section>
+</dd></dl>
+
+</section>
+<section id="forward-sampling-without-evidence">
+<h3>Forward sampling without evidence<a class="headerlink" href="#forward-sampling-without-evidence" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50_000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#sample" title="Link to this definition">¶</a></dt>
+<dd><p>Forward-sample all ancestors of <code class="docutils literal notranslate"><span class="pre">query_nodes</span></code> and return samples for the <strong>query nodes only</strong>.
+Intermediate ancestor samples are held only for the duration of the current batch and discarded
+afterwards, keeping peak memory bounded by <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> rather than <code class="docutils literal notranslate"><span class="pre">n_sample</span></code>.</p>
+<section id="id1">
+<h4>Parameters<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>probs</dt><dd><p>Mapping from node name → probability object.</p>
+</dd>
+<dt>query_nodes</dt><dd><p>Node names whose samples will be returned. All ancestors are still sampled internally
+(they are required to generate query-node samples), but are not retained in the output.</p>
+</dd>
+<dt>n_sample</dt><dd><p>Total number of samples to generate.</p>
+</dd>
+<dt>batch_size</dt><dd><p>Maximum number of samples processed per batch. Controls peak memory: at any time, only
+<code class="docutils literal notranslate"><span class="pre">min(batch_size,</span> <span class="pre">n_sample)</span></code> samples per ancestor variable are held in memory.
+Defaults to <code class="docutils literal notranslate"><span class="pre">50_000</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h4>Returns<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p>A dictionary <code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">prob_object}</span></code> containing <strong>only the query nodes</strong> (not their
+ancestors). For each returned probability object <code class="docutils literal notranslate"><span class="pre">P</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">P.Cs</span></code> is a tensor with shape <code class="docutils literal notranslate"><span class="pre">(n_sample,</span> <span class="pre">n_childs)</span></code> or <code class="docutils literal notranslate"><span class="pre">(n_sample,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code>
+depending on the implementation of <code class="docutils literal notranslate"><span class="pre">P.sample</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">P.ps</span></code> is a tensor with shape <code class="docutils literal notranslate"><span class="pre">(n_sample,)</span></code> (often log-probabilities).</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="how-sampling-is-performed">
+<h4>How sampling is performed<a class="headerlink" href="#how-sampling-is-performed" title="Link to this heading">¶</a></h4>
+<ol class="arabic simple">
+<li><p>Compute ancestor order using <a class="reference internal" href="#get_ancestor_order" title="get_ancestor_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_ancestor_order()</span></code></a>.</p></li>
+<li><p>Deep-copy the needed probability objects (used to call <code class="docutils literal notranslate"><span class="pre">P.sample</span></code> only; <code class="docutils literal notranslate"><span class="pre">.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">.ps</span></code>
+are populated on query nodes at the end).</p></li>
+<li><p>Iterate over batches of size <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> (outer loop). Within each batch, walk the nodes
+in topological order (inner loop), keeping a temporary <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> dictionary
+<code class="docutils literal notranslate"><span class="pre">{var_name:</span> <span class="pre">tensor(n_batch,)}</span></code> that holds only the current batch’s ancestor values.</p></li>
+<li><p>For each node in the inner loop:</p>
+<ul class="simple">
+<li><p>if the node has no parents: call <code class="docutils literal notranslate"><span class="pre">P.sample(n_sample=n_batch)</span></code>.</p></li>
+<li><p>if parents exist: assemble parent sample matrix <code class="docutils literal notranslate"><span class="pre">Cs_par</span></code> of shape
+<code class="docutils literal notranslate"><span class="pre">(n_batch,</span> <span class="pre">n_parents)</span></code> from <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> and call <code class="docutils literal notranslate"><span class="pre">P.sample(Cs_pars=Cs_par)</span></code>.</p></li>
+<li><p>if the node is a query node, append <code class="docutils literal notranslate"><span class="pre">Cs_batch</span></code> and <code class="docutils literal notranslate"><span class="pre">ps_batch</span></code> to the per-query
+accumulators.</p></li>
+</ul>
+</li>
+<li><p>After all batches complete, concatenate the per-batch tensors for each query node along
+the sample dimension and attach them as <code class="docutils literal notranslate"><span class="pre">P.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">P.ps</span></code>.</p></li>
+</ol>
+</section>
+<section id="important">
+<h4>Important<a class="headerlink" href="#important" title="Link to this heading">¶</a></h4>
+<p>The module assumes each variable appears as a <strong>child</strong> of exactly one probability object.
+If a variable is a child in multiple objects, an <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> is raised.</p>
+</section>
+</dd></dl>
+
+</section>
+<section id="forward-sampling-with-evidence">
+<h3>Forward sampling with evidence<a class="headerlink" href="#forward-sampling-with-evidence" title="Link to this heading">¶</a></h3>
+<p>Evidence is provided as a table (typically a pandas DataFrame) whose columns are variable names
+and whose rows are evidence scenarios.</p>
+<p>Two implementations are included:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#sample_evidence_v0" title="sample_evidence_v0"><code class="xref py py-func docutils literal notranslate"><span class="pre">sample_evidence_v0()</span></code></a>: uses <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code> when parents exist (vectorised),
+and uses <code class="docutils literal notranslate"><span class="pre">prob.log_prob</span></code> for observed children. Returns the <strong>full ancestral subgraph</strong>
+(samples for every ancestor are retained).</p></li>
+<li><p><a class="reference internal" href="#sample_evidence" title="sample_evidence"><code class="xref py py-func docutils literal notranslate"><span class="pre">sample_evidence()</span></code></a>: uses only <code class="docutils literal notranslate"><span class="pre">prob.sample</span></code> (no <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code>), processes
+samples in batches, and returns <strong>only the query nodes</strong> — intermediate ancestor samples
+are discarded after each batch to keep peak memory bounded.</p></li>
+</ul>
+<dl class="py function">
+<dt class="sig sig-object py" id="sample_evidence_v0">
+<span class="sig-name descname"><span class="pre">sample_evidence_v0</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence_df</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#sample_evidence_v0" title="Link to this definition">¶</a></dt>
+<dd><p>Forward-sample all ancestors of <code class="docutils literal notranslate"><span class="pre">query_nodes</span></code> under multiple evidence rows.</p>
+<section id="id3">
+<h4>Parameters<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>probs</dt><dd><p>Mapping from node name → probability object.</p>
+</dd>
+<dt>query_nodes</dt><dd><p>Node names of interest.</p>
+</dd>
+<dt>n_sample</dt><dd><p>Number of samples per evidence row.</p>
+</dd>
+<dt>evidence_df</dt><dd><p>A pandas-like DataFrame. Each column name must match a variable name.
+Shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_evidence_vars)</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h4>Returns<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p><code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">prob_object}</span></code> for the ancestral subgraph. Each returned object contains:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prob_object.Cs</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code>
+(or <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">n_childs)</span></code> for root nodes / special cases)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prob_object.ps</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample)</span></code> containing log-probabilities</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="observed-child-handling">
+<h4>Observed child handling<a class="headerlink" href="#observed-child-handling" title="Link to this heading">¶</a></h4>
+<p>If a node is observed (its name is a column in <code class="docutils literal notranslate"><span class="pre">evidence_df</span></code>), this function:</p>
+<ul class="simple">
+<li><p>sets child samples to the observed value repeated over samples, and</p></li>
+<li><p>computes <code class="docutils literal notranslate"><span class="pre">ps</span></code> by evaluating <code class="docutils literal notranslate"><span class="pre">prob.log_prob</span></code> on the assembled <code class="docutils literal notranslate"><span class="pre">[childs</span> <span class="pre">|</span> <span class="pre">parents]</span></code> rows.</p></li>
+</ul>
+</section>
+<section id="parent-handling">
+<h4>Parent handling<a class="headerlink" href="#parent-handling" title="Link to this heading">¶</a></h4>
+<p>For each parent variable:</p>
+<ul class="simple">
+<li><p>if the parent is observed in <code class="docutils literal notranslate"><span class="pre">evidence_df</span></code>, the observed values are used,</p></li>
+<li><p>otherwise, sampled values from earlier nodes are used.</p></li>
+</ul>
+</section>
+<section id="id5">
+<h4>Notes<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>Evidence values are converted to torch tensors.</p></li>
+<li><p>This implementation expects <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence(Cs_pars)</span></code> to accept parent samples of
+shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">n_parents)</span></code>.</p></li>
+</ul>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="sample_evidence">
+<span class="sig-name descname"><span class="pre">sample_evidence</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">query_nodes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">set</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50_000</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#sample_evidence" title="Link to this definition">¶</a></dt>
+<dd><p>Forward-sample all ancestors of <code class="docutils literal notranslate"><span class="pre">query_nodes</span></code> under multiple evidence rows using <strong>only</strong>
+<code class="docutils literal notranslate"><span class="pre">prob.sample</span></code> (no <code class="docutils literal notranslate"><span class="pre">prob.sample_evidence</span></code>), and return samples for the <strong>query nodes only</strong>.
+Intermediate ancestor samples are held only for the duration of the current batch and discarded
+afterwards, keeping peak memory bounded by <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> rather than <code class="docutils literal notranslate"><span class="pre">n_sample</span></code>.</p>
+<section id="id6">
+<h4>Parameters<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>probs</dt><dd><p>Mapping from node name → probability object.</p>
+</dd>
+<dt>query_nodes</dt><dd><p>Node names whose samples will be returned. All ancestors are still sampled internally
+(they are required to generate query-node samples), but are not retained in the output.</p>
+</dd>
+<dt>n_sample</dt><dd><p>Number of samples per evidence row.</p>
+</dd>
+<dt>evidence_df</dt><dd><p>A pandas-like DataFrame with evidence columns. Each column name must match a variable name.
+Shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_evidence_vars)</span></code>.</p>
+</dd>
+<dt>batch_size</dt><dd><p>Maximum number of samples processed per batch (per evidence row). Controls peak memory:
+at any time, only <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">min(batch_size,</span> <span class="pre">n_sample))</span></code> samples per ancestor variable are
+held in memory. Defaults to <code class="docutils literal notranslate"><span class="pre">50_000</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h4>Returns<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p><code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">prob_object}</span></code> containing <strong>only the query nodes</strong> (not their ancestors).
+Each returned object contains:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prob_object.Cs</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code> (non-root nodes)
+or <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample,</span> <span class="pre">n_childs)</span></code> (root / observed child cases)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prob_object.ps</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_sample)</span></code> containing log-probabilities</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h4>How sampling is performed<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
+<ol class="arabic simple">
+<li><p>Compute ancestor order using <a class="reference internal" href="#get_ancestor_order" title="get_ancestor_order"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_ancestor_order()</span></code></a>.</p></li>
+<li><p>Deep-copy the needed probability objects (used to call <code class="docutils literal notranslate"><span class="pre">P.sample</span></code> only; <code class="docutils literal notranslate"><span class="pre">.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">.ps</span></code>
+are populated on query nodes at the end).</p></li>
+<li><p>Iterate over batches of size <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> (outer loop). Within each batch, walk the nodes
+in topological order (inner loop), keeping a temporary <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> dictionary
+<code class="docutils literal notranslate"><span class="pre">{var_name:</span> <span class="pre">tensor(n_evi,</span> <span class="pre">n_batch)}</span></code> that holds only the current batch’s ancestor values.</p></li>
+<li><p>For each node in the inner loop:</p>
+<ul class="simple">
+<li><p><strong>Observed node</strong> (<code class="docutils literal notranslate"><span class="pre">node</span> <span class="pre">in</span> <span class="pre">evidence_df.columns</span></code>): broadcast the observed values across
+samples and evaluate <code class="docutils literal notranslate"><span class="pre">prob.log_prob</span></code> on the assembled <code class="docutils literal notranslate"><span class="pre">[childs</span> <span class="pre">|</span> <span class="pre">parents]</span></code> rows.</p></li>
+<li><p><strong>Root node</strong> (no parents): generate <code class="docutils literal notranslate"><span class="pre">n_evi</span> <span class="pre">*</span> <span class="pre">n_batch</span></code> samples via <code class="docutils literal notranslate"><span class="pre">P.sample</span></code> and
+reshape to <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_batch,</span> <span class="pre">n_childs)</span></code>.</p></li>
+<li><p><strong>Non-root node</strong>: assemble parent matrix of shape <code class="docutils literal notranslate"><span class="pre">(n_evi</span> <span class="pre">*</span> <span class="pre">n_batch,</span> <span class="pre">n_parents)</span></code> from
+<code class="docutils literal notranslate"><span class="pre">batch_samples</span></code> (or from <code class="docutils literal notranslate"><span class="pre">evidence_df</span></code> if a parent is observed), call
+<code class="docutils literal notranslate"><span class="pre">P.sample(Cs_pars=...)</span></code>, and reshape back to evidence form.</p></li>
+<li><p>If the node is a query node, append <code class="docutils literal notranslate"><span class="pre">Cs_batch</span></code> and <code class="docutils literal notranslate"><span class="pre">ps_batch</span></code> to the per-query
+accumulators.</p></li>
+</ul>
+</li>
+<li><p>After all batches complete, concatenate the per-batch tensors for each query node along
+the sample dimension (<code class="docutils literal notranslate"><span class="pre">dim=1</span></code>) and attach them as <code class="docutils literal notranslate"><span class="pre">P.Cs</span></code> / <code class="docutils literal notranslate"><span class="pre">P.ps</span></code>.</p></li>
+</ol>
+</section>
+<section id="id9">
+<h4>Parent handling<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h4>
+<p>For each parent variable:</p>
+<ul class="simple">
+<li><p>if the parent is observed in <code class="docutils literal notranslate"><span class="pre">evidence_df</span></code>, the observed values are broadcast across
+samples,</p></li>
+<li><p>otherwise, sampled values for the current batch are pulled from <code class="docutils literal notranslate"><span class="pre">batch_samples</span></code>.</p></li>
+</ul>
+</section>
+<section id="id10">
+<h4>Important<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h4>
+<p>The module assumes each variable appears as a <strong>child</strong> of exactly one probability object.
+If a variable is a child in multiple objects, an <code class="docutils literal notranslate"><span class="pre">AssertionError</span></code> is raised.</p>
+</section>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="tbnpy.adaptiveMH.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">tbnpy.adaptiveMH</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="tbnpy.cpt.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">tbnpy.cpt</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, DUCO research group
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">tbnpy.inference</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#quick-start">Quick start</a></li>
+<li><a class="reference internal" href="#public-api">Public API</a><ul>
+<li><a class="reference internal" href="#topological-utilities">Topological utilities</a><ul>
+<li><a class="reference internal" href="#get_ancestor_order"><code class="docutils literal notranslate"><span class="pre">get_ancestor_order()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#forward-sampling-without-evidence">Forward sampling without evidence</a><ul>
+<li><a class="reference internal" href="#sample"><code class="docutils literal notranslate"><span class="pre">sample()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#forward-sampling-with-evidence">Forward sampling with evidence</a><ul>
+<li><a class="reference internal" href="#sample_evidence_v0"><code class="docutils literal notranslate"><span class="pre">sample_evidence_v0()</span></code></a></li>
+<li><a class="reference internal" href="#sample_evidence"><code class="docutils literal notranslate"><span class="pre">sample_evidence()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

@@ -1,0 +1,698 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="EMA aftershock example" href="../examples/EMA_aftershock.html"><link rel="prev" title="tbnpy.inference" href="tbnpy.inference.html">
+        <link rel="canonical" href="https://jieunbyun.github.io/tbnpy/api/tbnpy.adaptiveMH.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>tbnpy.adaptiveMH - tbnpy 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">tbnpy 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">tbnpy 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/overview.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/repo_structure.html">Repository structure</a></li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">tbnpy</a><input aria-label="Toggle navigation of tbnpy" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="tbnpy.html">tbnpy package</a><input aria-label="Toggle navigation of tbnpy package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.variable.html">tbnpy.variable</a></li>
+<li class="toctree-l3"><a class="reference internal" href="custom_probability_models.html">Custom probability models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.cpt.html">tbnpy.cpt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tbnpy.inference.html">tbnpy.inference</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">tbnpy.adaptiveMH</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/EMA_aftershock.html">EMA aftershock example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/abcde_example.html">ABCDE example</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/tbnpy.adaptiveMH.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="tbnpy-adaptivemh">
+<h1>tbnpy.adaptiveMH<a class="headerlink" href="#tbnpy-adaptivemh" title="Link to this heading">¶</a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p>This module implements an <strong>adaptive, tensorised Metropolis–Hastings (MH) sampler</strong>
+for <strong>hybrid Bayesian networks</strong> containing both discrete and continuous variables.</p>
+<p>Key design features:</p>
+<ul class="simple">
+<li><p>Supports <strong>many evidence rows</strong> and <strong>many parallel chains</strong> simultaneously.</p></li>
+<li><p>Uses <strong>tensorised log-probability evaluation</strong> for efficiency.</p></li>
+<li><p>Handles <strong>hybrid variables</strong>:
+- discrete variables via symmetric adaptive categorical proposals,
+- continuous variables via Gaussian random-walk proposals.</p></li>
+<li><p>Adapts proposal parameters during burn-in using <strong>Robbins–Monro</strong> updates.</p></li>
+</ul>
+<p>The sampler is factor-based: each probability object (typically
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Cpt</span></code>) is treated as a <em>factor</em> contributing to the joint log-probability.</p>
+</section>
+<section id="glossary">
+<h2>Glossary<a class="headerlink" href="#glossary" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong>n_evi</strong>: number of evidence rows.</p></li>
+<li><p><strong>n_chain</strong>: number of parallel MCMC chains.</p></li>
+<li><p><strong>state</strong>: dictionary mapping <code class="docutils literal notranslate"><span class="pre">var_name</span> <span class="pre">-&gt;</span> <span class="pre">tensor</span> <span class="pre">(n_evi,</span> <span class="pre">n_chain)</span></code>.</p></li>
+<li><p><strong>evidence_1d</strong>: dictionary mapping <code class="docutils literal notranslate"><span class="pre">var_name</span> <span class="pre">-&gt;</span> <span class="pre">tensor</span> <span class="pre">(n_evi,)</span></code>.</p></li>
+<li><p><strong>factor</strong>: a probability object defining a local conditional distribution.</p></li>
+</ul>
+</section>
+<section id="utility-functions">
+<h2>Utility functions<a class="headerlink" href="#utility-functions" title="Link to this heading">¶</a></h2>
+<section id="variable-type-helpers">
+<h3>Variable type helpers<a class="headerlink" href="#variable-type-helpers" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="is_discrete">
+<span class="sig-name descname"><span class="pre">is_discrete</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#is_discrete" title="Link to this definition">¶</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">var</span></code> represents a discrete variable
+(i.e. <code class="docutils literal notranslate"><span class="pre">var.values</span></code> is a list).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="is_continuous">
+<span class="sig-name descname"><span class="pre">is_continuous</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#is_continuous" title="Link to this definition">¶</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if <code class="docutils literal notranslate"><span class="pre">var</span></code> represents a continuous variable
+(i.e. <code class="docutils literal notranslate"><span class="pre">var.values</span></code> is a tuple).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="num_categories">
+<span class="sig-name descname"><span class="pre">num_categories</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#num_categories" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of discrete categories of <code class="docutils literal notranslate"><span class="pre">var</span></code>.
+Raises an assertion error if <code class="docutils literal notranslate"><span class="pre">var</span></code> is not discrete.</p>
+</dd></dl>
+
+</section>
+<section id="factor-construction-utilities">
+<h3>Factor construction utilities<a class="headerlink" href="#factor-construction-utilities" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="build_Cs_3d">
+<span class="sig-name descname"><span class="pre">build_Cs_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evidence_1d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#build_Cs_3d" title="Link to this definition">¶</a></dt>
+<dd><p>Build a 3D tensor of composite states for a probability object.</p>
+<section id="parameters">
+<h4>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>prob</dt><dd><p>Probability object with attributes <code class="docutils literal notranslate"><span class="pre">childs</span></code> and <code class="docutils literal notranslate"><span class="pre">parents</span></code>.</p>
+</dd>
+<dt>state</dt><dd><p>Dictionary mapping latent variable names to tensors of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain)</span></code>.</p>
+</dd>
+<dt>evidence_1d</dt><dd><p>Dictionary mapping observed variable names to tensors of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,)</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h4>Returns<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h4>
+<dl>
+<dt>torch.Tensor</dt><dd><p>Tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain,</span> <span class="pre">n_childs</span> <span class="pre">+</span> <span class="pre">n_parents)</span></code> in column order:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">child_0</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">child_</span><span class="p">{</span><span class="n">n_childs</span><span class="o">-</span><span class="mi">1</span><span class="p">},</span> <span class="n">parent_0</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">parent_</span><span class="p">{</span><span class="n">n_parents</span><span class="o">-</span><span class="mi">1</span><span class="p">}]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</section>
+<section id="notes">
+<h4>Notes<a class="headerlink" href="#notes" title="Link to this heading">¶</a></h4>
+<p>Evidence variables are broadcast across chains.
+Latent variables are taken from <code class="docutils literal notranslate"><span class="pre">state</span></code>.</p>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="factor_logp_2d">
+<span class="sig-name descname"><span class="pre">factor_logp_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prob</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Cs_3d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#factor_logp_2d" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate a factor log-probability on a 3D tensor.</p>
+<section id="id1">
+<h4>Parameters<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>prob</dt><dd><p>Probability object exposing <code class="docutils literal notranslate"><span class="pre">log_prob</span></code>.</p>
+</dd>
+<dt>Cs_3d</dt><dd><p>Tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain,</span> <span class="pre">dim)</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h4>Returns<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>torch.Tensor</dt><dd><p>Log-probabilities of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain)</span></code>.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="build_factors_by_var">
+<span class="sig-name descname"><span class="pre">build_factors_by_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#build_factors_by_var" title="Link to this definition">¶</a></dt>
+<dd><p>Build an adjacency mapping from variable name to dependent factors.</p>
+<section id="id3">
+<h4>Parameters<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>probs</dt><dd><p>Mapping <code class="docutils literal notranslate"><span class="pre">{node_name:</span> <span class="pre">probability_object}</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h4>Returns<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p>Mapping <code class="docutils literal notranslate"><span class="pre">{var_name:</span> <span class="pre">list[probability_object]}</span></code> where each factor
+depends on the variable either as a child or a parent.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</section>
+<section id="proposal-kernels">
+<h2>Proposal kernels<a class="headerlink" href="#proposal-kernels" title="Link to this heading">¶</a></h2>
+<section id="discrete-proposals">
+<h3>Discrete proposals<a class="headerlink" href="#discrete-proposals" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="propose_discrete_adaptive">
+<span class="sig-name descname"><span class="pre">propose_discrete_adaptive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#propose_discrete_adaptive" title="Link to this definition">¶</a></dt>
+<dd><p>Symmetric adaptive proposal for a discrete variable.</p>
+<section id="id5">
+<h4>Parameters<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>x</dt><dd><p>Current state, shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain)</span></code>, integer in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">K-1]</span></code>.</p>
+</dd>
+<dt>logits</dt><dd><p>Global adaptive logits of shape <code class="docutils literal notranslate"><span class="pre">(K,)</span></code>.</p>
+</dd>
+<dt>alpha</dt><dd><p>Mixing weight between local and global proposals (<code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">&lt;</span> <span class="pre">alpha</span> <span class="pre">&lt;</span> <span class="pre">1</span></code>).</p>
+</dd>
+</dl>
+</section>
+<section id="id6">
+<h4>Returns<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>torch.Tensor</dt><dd><p>Proposed state, same shape as <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h4>Notes<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
+<p>The proposal is a mixture of:</p>
+<ul class="simple">
+<li><p><strong>local move</strong>: uniform jump to any other category,</p></li>
+<li><p><strong>global move</strong>: draw from a learned categorical distribution.</p></li>
+</ul>
+<p>The mixture remains symmetric, preserving MH correctness.</p>
+</section>
+</dd></dl>
+
+</section>
+<section id="continuous-proposals">
+<h3>Continuous proposals<a class="headerlink" href="#continuous-proposals" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="propose_continuous_rw_gaussian">
+<span class="sig-name descname"><span class="pre">propose_continuous_rw_gaussian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#propose_continuous_rw_gaussian" title="Link to this definition">¶</a></dt>
+<dd><p>Gaussian random-walk proposal.</p>
+<section id="id8">
+<h4>Parameters<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>x</dt><dd><p>Current state tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain)</span></code>.</p>
+</dd>
+<dt>sigma</dt><dd><p>Standard deviation of the proposal.</p>
+</dd>
+</dl>
+</section>
+<section id="id9">
+<h4>Returns<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>torch.Tensor</dt><dd><p>Proposed state, same shape as <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</section>
+<section id="adaptation-configuration">
+<h2>Adaptation configuration<a class="headerlink" href="#adaptation-configuration" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="AdaptConfig">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">AdaptConfig</span></span><a class="headerlink" href="#AdaptConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Configuration parameters for adaptive MH.</p>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>burnin<span class="classifier">int</span></dt><dd><p>Number of iterations during which adaptation is active.</p>
+</dd>
+<dt>gamma<span class="classifier">float</span></dt><dd><p>Robbins–Monro exponent (typically in <code class="docutils literal notranslate"><span class="pre">(0.5,</span> <span class="pre">1]</span></code>).</p>
+</dd>
+<dt>target_accept<span class="classifier">float</span></dt><dd><p>Target acceptance rate for continuous proposals.</p>
+</dd>
+<dt>min_log_sigma, max_log_sigma<span class="classifier">float</span></dt><dd><p>Bounds for continuous proposal scales.</p>
+</dd>
+<dt>alpha<span class="classifier">float</span></dt><dd><p>Mixing weight for discrete proposals.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="hybridadaptivemh">
+<h2>HybridAdaptiveMH<a class="headerlink" href="#hybridadaptivemh" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="HybridAdaptiveMH">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">HybridAdaptiveMH</span></span><a class="headerlink" href="#HybridAdaptiveMH" title="Link to this definition">¶</a></dt>
+<dd><p>Adaptive Metropolis–Hastings sampler for hybrid Bayesian networks.</p>
+<p>The sampler maintains a latent state:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">state[var_name]</span></code> has shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain)</span></code></p></li>
+<li><p>evidence variables are fixed and broadcast across chains</p></li>
+</ul>
+<p>Each MH step updates <strong>one variable (or block)</strong> at a time.</p>
+</dd></dl>
+
+<section id="initialisation">
+<h3>Initialisation<a class="headerlink" href="#initialisation" title="Link to this heading">¶</a></h3>
+<dl class="py method">
+<dt class="sig sig-object py" id="HybridAdaptiveMH.init_state_from_forward_samples">
+<span class="sig-prename descclassname"><span class="pre">HybridAdaptiveMH.</span></span><span class="sig-name descname"><span class="pre">init_state_from_forward_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">probs_copy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#HybridAdaptiveMH.init_state_from_forward_samples" title="Link to this definition">¶</a></dt>
+<dd><p>Initialise latent state from forward-sampling output
+(e.g. produced by <code class="xref py py-mod docutils literal notranslate"><span class="pre">tbnpy.inference</span></code>).</p>
+<section id="id10">
+<h4>Parameters<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>probs_copy</dt><dd><p>Dictionary of probability objects where each object has:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prob.Cs</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain,</span> <span class="pre">dim)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prob.ps</span></code> of shape <code class="docutils literal notranslate"><span class="pre">(n_evi,</span> <span class="pre">n_chain)</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="HybridAdaptiveMH.init_state_random">
+<span class="sig-prename descclassname"><span class="pre">HybridAdaptiveMH.</span></span><span class="sig-name descname"><span class="pre">init_state_random</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#HybridAdaptiveMH.init_state_random" title="Link to this definition">¶</a></dt>
+<dd><p>Initialise latent state randomly.</p>
+<p>Discrete variables are drawn uniformly; continuous variables
+are drawn from a standard normal distribution.</p>
+</dd></dl>
+
+</section>
+<section id="core-mcmc-update">
+<h3>Core MCMC update<a class="headerlink" href="#core-mcmc-update" title="Link to this heading">¶</a></h3>
+<dl class="py method">
+<dt class="sig sig-object py" id="HybridAdaptiveMH.mh_update_block">
+<span class="sig-prename descclassname"><span class="pre">HybridAdaptiveMH.</span></span><span class="sig-name descname"><span class="pre">mh_update_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iteration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="headerlink" href="#HybridAdaptiveMH.mh_update_block" title="Link to this definition">¶</a></dt>
+<dd><p>Perform one MH update for a block of variables.</p>
+<section id="id11">
+<h4>Parameters<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>vars</dt><dd><p>List of variables to update jointly.</p>
+</dd>
+<dt>iteration</dt><dd><p>Current iteration index (used for adaptation).</p>
+</dd>
+</dl>
+</section>
+<section id="id12">
+<h4>Returns<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>torch.Tensor</dt><dd><p>Boolean tensor of shape <code class="docutils literal notranslate"><span class="pre">(n_chain,)</span></code> indicating accepted chains.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+<section id="running-the-sampler">
+<h3>Running the sampler<a class="headerlink" href="#running-the-sampler" title="Link to this heading">¶</a></h3>
+<dl class="py method">
+<dt class="sig sig-object py" id="HybridAdaptiveMH.run">
+<span class="sig-prename descclassname"><span class="pre">HybridAdaptiveMH.</span></span><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_iter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">update_blocks</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_every</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress_every</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#HybridAdaptiveMH.run" title="Link to this definition">¶</a></dt>
+<dd><p>Run the adaptive MH sampler.</p>
+<section id="id13">
+<h4>Parameters<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>n_iter</dt><dd><p>Number of MCMC iterations.</p>
+</dd>
+<dt>update_blocks</dt><dd><p>Optional variable blocks (by name) to update jointly.</p>
+</dd>
+<dt>store_every</dt><dd><p>Thinning interval for storing full latent states (can be memory intensive).</p>
+</dd>
+<dt>progress_every</dt><dd><p>Print progress every given number of iterations.</p>
+</dd>
+</dl>
+</section>
+<section id="id14">
+<h4>Returns<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h4>
+<dl class="simple">
+<dt>dict</dt><dd><p>Dictionary containing:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">accept_rate</span></code> : per-block acceptance rates</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logp_chain</span></code> : final log-probability per chain</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logp_evi_chain</span></code> : final log-probability per evidence×chain</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">log_sigma</span></code> : learned proposal scales for continuous variables</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">states_thinned</span></code> (optional) : stored latent states</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../examples/EMA_aftershock.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">EMA aftershock example</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="tbnpy.inference.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">tbnpy.inference</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, DUCO research group
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">tbnpy.adaptiveMH</a><ul>
+<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#glossary">Glossary</a></li>
+<li><a class="reference internal" href="#utility-functions">Utility functions</a><ul>
+<li><a class="reference internal" href="#variable-type-helpers">Variable type helpers</a><ul>
+<li><a class="reference internal" href="#is_discrete"><code class="docutils literal notranslate"><span class="pre">is_discrete()</span></code></a></li>
+<li><a class="reference internal" href="#is_continuous"><code class="docutils literal notranslate"><span class="pre">is_continuous()</span></code></a></li>
+<li><a class="reference internal" href="#num_categories"><code class="docutils literal notranslate"><span class="pre">num_categories()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#factor-construction-utilities">Factor construction utilities</a><ul>
+<li><a class="reference internal" href="#build_Cs_3d"><code class="docutils literal notranslate"><span class="pre">build_Cs_3d()</span></code></a></li>
+<li><a class="reference internal" href="#factor_logp_2d"><code class="docutils literal notranslate"><span class="pre">factor_logp_2d()</span></code></a></li>
+<li><a class="reference internal" href="#build_factors_by_var"><code class="docutils literal notranslate"><span class="pre">build_factors_by_var()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#proposal-kernels">Proposal kernels</a><ul>
+<li><a class="reference internal" href="#discrete-proposals">Discrete proposals</a><ul>
+<li><a class="reference internal" href="#propose_discrete_adaptive"><code class="docutils literal notranslate"><span class="pre">propose_discrete_adaptive()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#continuous-proposals">Continuous proposals</a><ul>
+<li><a class="reference internal" href="#propose_continuous_rw_gaussian"><code class="docutils literal notranslate"><span class="pre">propose_continuous_rw_gaussian()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#adaptation-configuration">Adaptation configuration</a><ul>
+<li><a class="reference internal" href="#AdaptConfig"><code class="docutils literal notranslate"><span class="pre">AdaptConfig</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hybridadaptivemh">HybridAdaptiveMH</a><ul>
+<li><a class="reference internal" href="#HybridAdaptiveMH"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH</span></code></a></li>
+<li><a class="reference internal" href="#initialisation">Initialisation</a><ul>
+<li><a class="reference internal" href="#HybridAdaptiveMH.init_state_from_forward_samples"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.init_state_from_forward_samples()</span></code></a></li>
+<li><a class="reference internal" href="#HybridAdaptiveMH.init_state_random"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.init_state_random()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#core-mcmc-update">Core MCMC update</a><ul>
+<li><a class="reference internal" href="#HybridAdaptiveMH.mh_update_block"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.mh_update_block()</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-the-sampler">Running the sampler</a><ul>
+<li><a class="reference internal" href="#HybridAdaptiveMH.run"><code class="docutils literal notranslate"><span class="pre">HybridAdaptiveMH.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
