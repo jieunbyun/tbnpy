@@ -1,6 +1,8 @@
 from __future__ import annotations
 import torch, copy
 
+from tbnpy.protocols import validate_prob_objects
+
 
 # Functions
 def get_ancestor_order(probs, query_nodes):
@@ -156,6 +158,7 @@ def sample(probs, query_nodes, n_sample, batch_size=50_000):
     assert isinstance(n_sample, int), "`n_sample` must be an integer."
     assert n_sample > 0, "`n_sample` must be positive."
     _validate_batch_size(batch_size)
+    validate_prob_objects(probs)
 
     ordered_nodes = get_ancestor_order(probs, query_nodes)
     query_set = set(query_nodes)
@@ -415,6 +418,7 @@ def sample_evidence(probs, query_nodes, n_sample, evidence_df, batch_size=50_000
     assert isinstance(n_sample, int), "`n_sample` must be an integer."
     assert n_sample > 0, "`n_sample` must be positive."
     _validate_batch_size(batch_size)
+    validate_prob_objects(probs)
 
     n_evi = len(evidence_df)
     ordered_nodes = get_ancestor_order(probs, query_nodes)

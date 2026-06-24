@@ -450,8 +450,8 @@ def test_sample1(dict_cpt3):
         # Check probabilities returned match p[event_idx]
         event_idx = (Cs == 0).long().squeeze(1)   # vectorized
         expected_ps = T.p[event_idx]
-        assert torch.allclose(ps, expected_ps.squeeze()), \
-            f"ps mismatch:\nexpected {expected_ps}\n got {ps}"
+        assert torch.allclose(ps, expected_ps.squeeze().log()), \
+            f"ps mismatch:\nexpected {expected_ps.log()}\n got {ps}"
 
         # Basic sanity: over 10 samples, we expect *at least one* 1 and one 0
         # (rare failures allowed in theory but practically never in 10×10 draws)
@@ -528,8 +528,8 @@ def test_sample3(dict_cpt5):
         # Infer event index
         event_idx = reverse_map[row]
 
-        # Expected probability
-        expected_p = p[event_idx]
+        # Expected probability (ps is returned in log-space)
+        expected_p = p[event_idx].log()
 
         # Compare against ps[i]
         assert abs(ps[i].item() - expected_p.item()) < 1e-6, \
@@ -572,7 +572,7 @@ def test_sample4(dict_cpt2):
             assert child in expected_prob[i], \
                 f"Row {i}: unexpected child {child}"
 
-            exp_p = expected_prob[i][child]
+            exp_p = np.log(expected_prob[i][child])   # ps is returned in log-space
 
             assert abs(ps_list[i] - exp_p) < 1e-6, \
                 f"Row {i}: ps={ps_list[i]}, expected {exp_p}"
@@ -593,8 +593,8 @@ def test_sample5(dict_cpt1):
     # Expected child outcomes (deterministic)
     expected_child = [1, 1, 1, 0]
 
-    # Expected probabilities (always 1.0 for dict_cpt1)
-    expected_ps = [1.0, 1.0, 1.0, 1.0]
+    # Expected probabilities (always 1.0 for dict_cpt1; ps is returned in log-space → 0.0)
+    expected_ps = [0.0, 0.0, 0.0, 0.0]
 
     for _ in range(10):   # multiple repetitions for robustness
 
@@ -809,8 +809,8 @@ def test_sample_evidence1(dict_cpt2):
             assert key in expected_map, \
                 f"Unexpected composite state Cs[{i},{j}]={key}"
 
-            # Expected probability
-            expected_p = expected_map[key]
+            # Expected probability (ps is returned in log-space)
+            expected_p = np.log(expected_map[key])
 
             # Check probability matches
             assert abs(ps[i, j].item() - expected_p) < 1e-6, \

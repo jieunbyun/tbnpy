@@ -14,7 +14,10 @@ The logic mirrors ``rsr.get_comp_cond_sys_prob_multi``:
 The class accepts an optional ``s_fun(comps_dict) -> (_, sys_st, _)``
 callable to resolve any samples that remain unknown after the last
 level. If ``s_fun`` is ``None``, unknown samples are assigned to
-``unknown_state`` (default ``-1``).
+``unknown_state`` (default ``-1``). In ``sample`` those unresolved
+samples are additionally given a log-probability of ``-inf`` (prob 0)
+so they are never weighted as a valid, probability-1 outcome. Pass
+``strict=True`` to raise instead of emitting the sentinel.
 
 System states are 0-indexed: valid values are ``{0, 1, ..., max_st}``.
 ``unknown_state = -1`` is therefore deliberately outside this range, so
@@ -46,6 +49,7 @@ class S:
         row_names: Sequence[str],
         s_fun: Optional[Callable[[Dict[str, int]], tuple]] = None,
         unknown_state: int = -1,
+        strict: bool = False,
         device: str = "cpu",
     ):
         assert len(childs) == 1
@@ -74,6 +78,7 @@ class S:
         self.row_names = list(row_names)
         self.s_fun = s_fun
         self.unknown_state = int(unknown_state)
+        self.strict = bool(strict)
         self.max_st = max(sys_states)
 
     def _to_onehot(self, X):
@@ -135,7 +140,25 @@ class S:
         Cs_pars = Cs_pars.to(self.device)
         X = Cs_pars  # (n, N)
         S_vals = self._classify(X)
+
+        # Deterministic node: a resolved sample has log-prob 0 (prob 1).
+        # Samples the classifier could not resolve carry the ``unknown_state``
+        # sentinel; they have no valid system state, so they must NOT be
+        # weighted as a valid, probability-1 outcome. Give them log-prob -inf
+        # (prob 0) so any importance-weighting consumer discards them and the
+        # sentinel cannot silently masquerade as a real classification.
         logp = torch.zeros(S_vals.shape[0], device=self.device)
+        unknown = S_vals == self.unknown_state
+        if unknown.any():
+            if self.strict:
+                raise RuntimeError(
+                    f"{int(unknown.sum())} of {S_vals.shape[0]} sample(s) could "
+                    f"not be classified into a system state and no s_fun "
+                    f"resolved them. Pass an s_fun to S, or set strict=False to "
+                    f"emit the {self.unknown_state} sentinel with -inf "
+                    f"log-probability."
+                )
+            logp[unknown] = float("-inf")
         return S_vals, logp
 
     def log_prob(self, Cs):
