@@ -9,7 +9,7 @@ description = "Tensor-based Bayesian Network (TBN) toolkit for scalable probabil
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Ji-Eun Byun" }]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 
 dependencies = [
   "numpy>=1.23",
