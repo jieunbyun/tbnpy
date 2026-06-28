@@ -198,3 +198,29 @@ Run the script from the example directory:
 
 The ``__main__`` block can be adjusted for larger or smaller sample budgets,
 GPU use, and a subset of target edges.
+
+Computational cost scaling
+--------------------------
+
+The file ``examples/EMA_aftershock/s04_eval_performance.py`` benchmarks how
+the wall-clock cost of forward sampling changes as the number of Monte Carlo
+samples increases. By default, it samples all variables in the EMA BN, matching
+the forward-sampling setup used in ``s02_forward_inference.py``.
+
+.. image:: ../../../examples/EMA_aftershock/results/performance_sampling_Kmax10_maxst2_all.png
+   :alt: Wall-clock sampling time as the number of samples increases
+   :align: center
+   :width: 650px
+
+The cost generally increases with the number of samples, but the scaling
+benefit from vectorisation diminishes as the requested sample count reaches the
+internal ``batch_size``. Beyond that point, the sampler splits the work into
+multiple batches, which adds overhead and can make the computation scale less
+smoothly.
+
+Run the benchmark from the example directory:
+
+.. code-block:: bash
+
+   cd examples/EMA_aftershock
+   python s04_eval_performance.py
