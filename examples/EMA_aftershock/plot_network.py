@@ -1,22 +1,33 @@
 """
 Draw the EMA highway network and overlay the bounding rectangle used as
-``L_0``'s uniform support.
+``L_0``'s uniform support (the areal source).
 
 The region is the axis-aligned bounding box of the node coordinates,
 expanded by ``margin_frac`` (default 0.30 = 30%) on each of the four
 sides.
 
+Styling follows ``draw_graph_population.py``: a compact portrait figure with
+node marker *diameters* measured in data units -- the same units as the edge
+lengths -- so nodes stay proportionate to the graph geometry at any figure
+size. A size key relates marker size to population.
+
 Run as::
 
     python plot_network.py
 
-The figure is saved to ``results/ema_network.png``.
+The figure is saved to ``results/ema_network.png`` (with an SVG copy).
 """
 
+import math
 import sys
 from pathlib import Path
 
+import matplotlib
+
+# Keep SVG text editable (e.g., in Inkscape) instead of outlining it to paths.
+matplotlib.rcParams["svg.fonttype"] = "none"
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib.patches import Rectangle
 
 BASE = Path(__file__).resolve().parent
@@ -31,9 +42,36 @@ RESULTS.mkdir(exist_ok=True)
 
 DESTS = ["n22", "n66"]
 
+EDGE_COLOR = "#9aa4ad"
+NODE_FILL = "tab:blue"
+DEST_COLOR = "tab:orange"
+SOURCE_COLOR = "tab:red"
+
+# Node *diameters* as a fraction of the median edge length. Area still grows
+# with population (diameter ~ sqrt(pop)); the floor keeps zero-pop nodes visible.
+MIN_DIAM_FRAC = 0.20
+MAX_DIAM_FRAC = 0.85
+# Destination-star diameter as a fraction of the median edge length.
+STAR_DIAM_FRAC = 1.10
+# Population values shown in the size key.
+LEGEND_POPS = (500, 1500, 3000)
+
+
+def _points_per_data_unit(fig, ax) -> float:
+    """Length of one data unit expressed in typographic points.
+
+    Marker sizes (scatter ``s``) are areas in points**2, independent of the
+    data scale, so to size nodes in data units we convert here. Requires the
+    axes limits to be final and the canvas drawn.
+    """
+    trans = ax.transData
+    (x0, _), (x1, _) = trans.transform((0.0, 0.0)), trans.transform((1.0, 0.0))
+    px_per_data = abs(x1 - x0)
+    return px_per_data * 72.0 / fig.dpi
+
 
 def plot_network(margin_frac=0.30, fname="ema_network.png",
-                 fontsize_label=16, fontsize_tick=16, fontsize_legend=14,
+                 figsize=(2.2, 2.6), dpi=300, fontsize=5, title_fontsize=6,
                  dests=None):
     if dests is None:
         dests = DESTS
@@ -42,65 +80,128 @@ def plot_network(margin_frac=0.30, fname="ema_network.png",
     region = region_from_nodes(nodes, margin_frac=margin_frac)
     x_min, x_max, y_min, y_max = region
 
-    fig, ax = plt.subplots(figsize=(7, 7))
+    pos = {nid: (float(a["x"]), float(a["y"])) for nid, a in nodes.items()}
+    pop = {nid: float(a.get("population", 0.0)) for nid, a in nodes.items()}
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.set_aspect("equal")
+    ax.axis("off")
 
     # ---- edges ----
-    for e in edges.values():
-        a, b = nodes[e["from"]], nodes[e["to"]]
-        ax.plot([a["x"], b["x"]], [a["y"], b["y"]],
-                color="0.5", linewidth=0.8, zorder=1)
+    segments = [(pos[e["from"]], pos[e["to"]]) for e in edges.values()]
+    edge_lengths = [math.dist(a, b) for a, b in segments]
+    median_edge = sorted(edge_lengths)[len(edge_lengths) // 2]
+    for (a, b) in segments:
+        ax.plot([a[0], b[0]], [a[1], b[1]],
+                color=EDGE_COLOR, linewidth=0.6, zorder=1)
 
-    # ---- nodes ----
-    dest_set = set(dests)
-    node_ids = list(nodes.keys())
-    xs = [nodes[n]["x"] for n in node_ids]
-    ys = [nodes[n]["y"] for n in node_ids]
-    pops = [nodes[n].get("population", 0.0) for n in node_ids]
-    max_pop = max(pops) if max(pops) > 0 else 1.0
-    sizes = [10 + 30 * (p / max_pop) for p in pops]
-
-    reg_idx  = [i for i, n in enumerate(node_ids) if n not in dest_set]
-    dest_idx = [i for i, n in enumerate(node_ids) if n in dest_set]
-
-    ax.scatter([xs[i] for i in reg_idx], [ys[i] for i in reg_idx],
-               s=[sizes[i] for i in reg_idx],
-               c="tab:blue", edgecolor="tab:blue", linewidths=0.6, zorder=2,
-               label="nodes\n(size $\propto$ population)")
-    ax.scatter([xs[i] for i in dest_idx], [ys[i] for i in dest_idx],
-               s=[sizes[i]*1.5 for i in dest_idx],
-               c="tab:orange", edgecolor="tab:orange", linewidths=0.8, zorder=3,
-               marker="*",
-               label=f"destinations\n({', '.join(dests)})")
-
-    # ---- region rectangle ----
+    # ---- region rectangle (areal source) ----
     rect = Rectangle(
         (x_min, y_min), x_max - x_min, y_max - y_min,
-        fill=False, edgecolor="tab:red", linewidth=1.8,
-        linestyle="--", zorder=3,
-        label=(f"L_0 support\n"
-               f"x=[{x_min:.1f}, {x_max:.1f}]\n"
-               f"y=[{y_min:.1f}, {y_max:.1f}]"),
+        fill=False, edgecolor=SOURCE_COLOR, linewidth=1.0,
+        linestyle="--", zorder=1,
     )
     ax.add_patch(rect)
 
-    # ---- annotation: node-bbox vs region ----
-    ax.axvline(min(xs), color="0.8", linewidth=0.5, zorder=0)
-    ax.axvline(max(xs), color="0.8", linewidth=0.5, zorder=0)
-    ax.axhline(min(ys), color="0.8", linewidth=0.5, zorder=0)
-    ax.axhline(max(ys), color="0.8", linewidth=0.5, zorder=0)
+    # Diameter in data units: sqrt scaling so *area* tracks population, with a
+    # floor so the smallest nodes stay visible. Reference = median edge length.
+    max_pop = max(pop.values()) or 1.0
+    min_d = MIN_DIAM_FRAC * median_edge
+    max_d = MAX_DIAM_FRAC * median_edge
 
-    ax.set_xlabel("x (km)", fontsize=fontsize_label)
-    ax.set_ylabel("y (km)", fontsize=fontsize_label)
-    ax.tick_params(labelsize=fontsize_tick)
-    ax.set_aspect("equal")
-    ax.legend(loc="lower left", fontsize=fontsize_legend)
+    def diam_for(p: float) -> float:
+        return min_d + (max_d - min_d) * math.sqrt(p / max_pop)
+
+    ax.margins(0.05)
+    ax.autoscale_view()
+
+    # Limits are final now; convert data-unit diameters to marker areas (pt**2).
+    fig.canvas.draw()
+    ppd = _points_per_data_unit(fig, ax)
+
+    def area(diam_units: float) -> float:
+        return (diam_units * ppd) ** 2
+
+    dest_set = set(dests)
+    plain = [nid for nid in pos if nid not in dest_set]
+    ax.scatter(
+        [pos[n][0] for n in plain],
+        [pos[n][1] for n in plain],
+        s=[area(diam_for(pop[n])) for n in plain],
+        c=NODE_FILL,
+        edgecolors="none",
+        zorder=2,
+        clip_on=False,
+    )
+
+    # Destinations as orange stars, sized to stand out regardless of population.
+    origins = [n for n in dests if n in pos]
+    if origins:
+        ax.scatter(
+            [pos[n][0] for n in origins],
+            [pos[n][1] for n in origins],
+            s=area(STAR_DIAM_FRAC * median_edge),
+            marker="*",
+            c=DEST_COLOR,
+            edgecolors="none",
+            zorder=3,
+            clip_on=False,
+        )
+
+    # ---- legend: categories (destinations + areal source) ----
+    cat_handles = [
+        Line2D([], [], marker="*", linestyle="none",
+               markerfacecolor=DEST_COLOR, markeredgecolor="none",
+               markersize=STAR_DIAM_FRAC * median_edge * ppd,
+               label="Destinations"),
+        Line2D([], [], color=SOURCE_COLOR, linewidth=1.0, linestyle="--",
+               label="Areal source"),
+    ]
+    cat_legend = ax.legend(
+        handles=cat_handles,
+        loc="upper left",
+        frameon=False,
+        handletextpad=0.8,
+        borderpad=0.0,
+        fontsize=fontsize,
+    )
+    ax.add_artist(cat_legend)
+
+    # ---- size key: reference circles at known populations, drawn with the
+    # exact same size mapping as the nodes (markersize is a diameter in points,
+    # so it equals the data-unit diameter times points-per-data-unit). ----
+    size_handles = [
+        Line2D([], [], marker="o", linestyle="none",
+               markerfacecolor=NODE_FILL, markeredgecolor="none",
+               markersize=diam_for(p) * ppd, label=f"{p:,}")
+        for p in LEGEND_POPS
+    ]
+    size_legend = ax.legend(
+        handles=size_handles,
+        title="Population\n(node size)",
+        loc="lower left",
+        frameon=False,
+        labelspacing=1.0,
+        handletextpad=0.8,
+        borderpad=0.0,
+        fontsize=fontsize,
+        title_fontsize=title_fontsize,
+    )
+    size_legend.get_title().set_ha("left")
 
     out_path = RESULTS / fname
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=200)
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight")
+    # Also emit a vector copy (SVG) alongside, unless the primary output is
+    # already a vector format.
+    outputs = [out_path]
+    if out_path.suffix.lower() not in (".svg", ".pdf", ".eps"):
+        vector_path = out_path.with_suffix(".svg")
+        fig.savefig(vector_path, bbox_inches="tight")
+        outputs.append(vector_path)
     plt.close(fig)
 
-    print(f"Saved: {out_path}")
+    for out in outputs:
+        print(f"Saved: {out}")
     print(f"Region: x in [{x_min:.3f}, {x_max:.3f}], "
           f"y in [{y_min:.3f}, {y_max:.3f}]")
     return region
