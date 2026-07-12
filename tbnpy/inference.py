@@ -136,11 +136,30 @@ def _validate_batch_size(batch_size):
     assert batch_size > 0, "`batch_size` must be positive."
 
 
-def sample(probs, query_nodes, n_sample, batch_size=50_000):
+def sample(
+    probs,
+    query_nodes,
+    n_sample,
+    batch_size=50_000,
+    on_batch=None,
+    accumulate_query=True,
+):
     """
     Forward-sample all ancestors of query_nodes, returning samples for
     query_nodes only. Intermediate ancestor samples are discarded after
     each batch to reduce peak memory usage.
+
+    Parameters
+    ----------
+    on_batch : callable or None
+        Optional callback invoked for each sampled query node and batch as:
+        ``on_batch(node_name, Cs_batch, ps_batch, start, end)``.
+        This can be used to consume results incrementally without storing
+        all query samples in memory.
+    accumulate_query : bool
+        If True (default), all query batches are stored and concatenated in
+        the returned objects. If False, query batches are not stored; use
+        ``on_batch`` to consume results.
 
     Returns:
         dict: {node_name: updated probability object} for query nodes only.
@@ -156,6 +175,8 @@ def sample(probs, query_nodes, n_sample, batch_size=50_000):
     assert isinstance(n_sample, int), "`n_sample` must be an integer."
     assert n_sample > 0, "`n_sample` must be positive."
     _validate_batch_size(batch_size)
+    if on_batch is not None:
+        assert callable(on_batch), "`on_batch` must be callable."
 
     ordered_nodes = get_ancestor_order(probs, query_nodes)
     query_set = set(query_nodes)
@@ -163,8 +184,9 @@ def sample(probs, query_nodes, n_sample, batch_size=50_000):
     probs_copy = {node: copy.deepcopy(probs[node]) for node in ordered_nodes}
 
     # Accumulators for query nodes only
-    query_Cs_batches = {node: [] for node in query_set}
-    query_ps_batches = {node: [] for node in query_set}
+    if accumulate_query:
+        query_Cs_batches = {node: [] for node in query_set}
+        query_ps_batches = {node: [] for node in query_set}
 
     # --- Forward sampling: batch-outer, node-inner -------------------------
     for start in range(0, n_sample, batch_size):
@@ -201,13 +223,19 @@ def sample(probs, query_nodes, n_sample, batch_size=50_000):
                     batch_samples[child_var.name] = Cs_batch[:, j]
 
             if node in query_set:
-                query_Cs_batches[node].append(Cs_batch)
-                query_ps_batches[node].append(ps_batch)
+                if accumulate_query:
+                    query_Cs_batches[node].append(Cs_batch)
+                    query_ps_batches[node].append(ps_batch)
+                if on_batch is not None:
+                    on_batch(node, Cs_batch, ps_batch, start, end)
 
         # batch_samples discarded at end of each batch
 
     # --- Assemble results for query nodes only -----------------------------
     result = {}
+    if not accumulate_query:
+        return result
+
     for node in query_set:
         prob = probs_copy[node]
         prob.Cs = torch.cat(query_Cs_batches[node], dim=0)

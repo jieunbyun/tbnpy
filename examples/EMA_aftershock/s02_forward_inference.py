@@ -19,6 +19,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import torch
 
 BASE = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE))
@@ -45,6 +46,23 @@ RESULTS = BASE / "results"
 RESULTS.mkdir(exist_ok=True)
 
 N_BINS = 60
+
+
+def _resolve_device(device):
+    if device is not None:
+        return torch.device(device)
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+
+    raise RuntimeError(
+        "CUDA is not available. Set device='cpu' explicitly only if you want to run on CPU."
+    )
+
+
+def _sync_cuda(device):
+    if isinstance(device, torch.device) and device.type == "cuda":
+        torch.cuda.synchronize(device)
 
 
 class _DiscAcc:
@@ -133,6 +151,22 @@ def _update_accs(filled, accs):
         acc.update(arr)
 
 
+def _update_accs_batch(node_name, Cs_batch, accs):
+    if node_name not in accs:
+        return
+    acc = accs[node_name]
+    if Cs_batch.ndim == 1:
+        values = Cs_batch
+    elif Cs_batch.ndim == 2:
+        values = Cs_batch[:, 0]
+    elif Cs_batch.ndim == 3:
+        values = Cs_batch[0, :, 0]
+    else:
+        raise ValueError(f"Unexpected Cs shape for {node_name}: {Cs_batch.shape}")
+    arr = values.detach().cpu().numpy()
+    acc.update(arr)
+
+
 def _save_stats(accs, path):
     rows = []
     for name, acc in accs.items():
@@ -192,13 +226,18 @@ def _save_histograms(accs, hist_dir, K_max):
 
 
 def main(K_max=10, n_sample=100_000, max_st=2, device=None,
-         force_recompute=False):
-    if device is None:
-        device = "cuda" if os.environ.get("USE_CUDA", "0") == "1" else "cpu"
+         force_recompute=False, batch_size=100_000):
+    t_total_start = time.perf_counter()
+    device = _resolve_device(device)
+
+    print(f"Device: {device}")
+    if device.type == "cuda":
+        print(f"CUDA device: {torch.cuda.get_device_name(device)}")
 
     tag = f"Kmax{K_max}_maxst{max_st}_n{n_sample}"
     stats_path = RESULTS / f"forward_stats_{tag}.csv"
     hist_dir = RESULTS / "histograms" / tag
+    timing_path = RESULTS / f"forward_timing_{tag}.csv"
 
     if stats_path.exists() and hist_dir.exists() and not force_recompute:
         print(f"Results exist ({stats_path}). Pass force_recompute=True to redo.")
@@ -209,44 +248,107 @@ def main(K_max=10, n_sample=100_000, max_st=2, device=None,
     refs_upper, refs_lower = load_rsr_refs(max_st=max_st, device=device)
     edge_names = list(edges.keys())
 
+    _sync_cuda(device)
+    t_build_start = time.perf_counter()
     varis = define_variables(edge_names, K_max=K_max, max_st=max_st)
     probs = define_probs(
         varis, edges, midpoints, region,
         refs_upper, refs_lower, K_max=K_max,
         s_fun=make_s_fun(), device=device,
     )
+    _sync_cuda(device)
+    build_model_sec = time.perf_counter() - t_build_start
 
     query_nodes = list(varis.keys())
-    accs = _make_accs(varis)
 
+    _sync_cuda(device)
     t_start = time.perf_counter()
-    print(f"Forward sampling: {n_sample:,} samples, {len(query_nodes)} variables.")
-
-    filled = inference.sample(
-        probs=probs,
-        query_nodes=query_nodes,
-        n_sample=n_sample,
-        batch_size=50_000,
+    print(
+        f"Forward sampling: {n_sample:,} samples, {len(query_nodes)} variables, "
+        f"external batch_size={batch_size:,}."
     )
-    _update_accs(filled, accs)
 
-    print(f"Sampling done in {time.perf_counter() - t_start:.1f}s. "
+    curr_batch = int(batch_size)
+    while True:
+        accs = _make_accs(varis)
+        n_done = 0
+
+        def _consume_batch(node_name, Cs_batch, _ps_batch, start, end):
+            nonlocal n_done
+            _update_accs_batch(node_name, Cs_batch, accs)
+            if node_name == query_nodes[0]:
+                n_done = end
+
+        try:
+            inference.sample(
+                probs=probs,
+                query_nodes=query_nodes,
+                n_sample=n_sample,
+                batch_size=curr_batch,
+                on_batch=_consume_batch,
+                accumulate_query=False,
+            )
+        except torch.OutOfMemoryError:
+            if device.type != "cuda":
+                raise
+            torch.cuda.empty_cache()
+            next_batch = curr_batch // 2
+            if next_batch < 100:
+                raise
+            curr_batch = next_batch
+            print(f"  CUDA OOM; retrying with smaller batch_size={curr_batch:,}")
+            continue
+        break
+
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+    print(f"  progress: {n_done:,}/{n_sample:,} samples")
+
+    _sync_cuda(device)
+    sampling_sec = time.perf_counter() - t_start
+
+    print(f"Sampling done in {sampling_sec:.1f}s. "
           "Saving stats and histograms...")
 
+    t_stats_start = time.perf_counter()
     _save_stats(accs, stats_path)
+    save_stats_sec = time.perf_counter() - t_stats_start
+
+    t_hist_start = time.perf_counter()
     _save_histograms(accs, hist_dir, K_max)
+    save_histograms_sec = time.perf_counter() - t_hist_start
+
+    total_sec = time.perf_counter() - t_total_start
+
+    timing_df = pd.DataFrame([
+        {
+            "device": str(device),
+            "K_max": int(K_max),
+            "max_st": int(max_st),
+            "n_sample": int(n_sample),
+            "batch_size": int(curr_batch),
+            "n_variables": int(len(query_nodes)),
+            "build_model_sec": build_model_sec,
+            "sampling_sec": sampling_sec,
+            "save_stats_sec": save_stats_sec,
+            "save_histograms_sec": save_histograms_sec,
+            "total_sec": total_sec,
+        }
+    ])
+    timing_df.to_csv(timing_path, index=False)
 
     n_plots = sum(1 for acc in accs.values()
                   if isinstance(acc, _DiscAcc)
                   or (isinstance(acc, _ContAcc) and acc.bin_edges is not None))
     print(f"Stats     -> {stats_path}")
     print(f"Histograms -> {hist_dir}  ({n_plots} files)")
+    print(f"Timing    -> {timing_path}")
     return pd.read_csv(stats_path)
 
 
 if __name__ == "__main__":
     main(
         K_max=10,
-        n_sample=100_000,
+        n_sample=1_000_000,
         force_recompute=True,
     )
