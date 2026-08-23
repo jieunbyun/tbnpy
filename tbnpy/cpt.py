@@ -178,17 +178,20 @@ class Cpt(object):
         # Validate number of columns
         # ------------------------------
         if value.numel() > 0:
-            expected_cols = len(self._childs) + len(self._parents)
+            # Two column layouts are in use across the library:
+            #   inference.sample()          stores child columns only
+            #   inference.sample_evidence() stores childs + parents
+            # Accept both, otherwise a Cpt with parents cannot be used with
+            # inference.sample() at all.
+            n_childs = len(self._childs)
+            accepted = {n_childs, n_childs + len(self._parents)}
+            got = value.shape[-1]
 
-            # Cs 2D: (n, m)
-            if value.ndim == 2:
-                assert value.shape[1] == expected_cols, \
-                    f"Cs must have {expected_cols} columns but got {value.shape[1]}."
-
-            # Cs 3D: (n_evi, n_sample, m)
-            if value.ndim == 3:
-                assert value.shape[2] == expected_cols, \
-                    f"Cs must have {expected_cols} columns but got {value.shape[2]}."
+            if value.ndim in (2, 3):
+                assert got in accepted, (
+                    f"Cs must have {' or '.join(str(a) for a in sorted(accepted))} "
+                    f"columns (childs only, or childs + parents) but got {got}."
+                )
 
         self._Cs = value
 
@@ -563,18 +566,23 @@ class Cpt(object):
         n_samples_total = Cs_pars.size(0)
         n_childs = len(self.childs)
 
-        # Convert parent composite states to binary
+        # Convert parent composite states to binary.
+        # get_Cst_to_Cbin is already vectorised over the sample dimension, so
+        # this is one call per parent rather than one per (sample, parent).
+        # Parents may differ in cardinality, so pad each to the widest before
+        # stacking.
         parent_vars = self.parents
-        bin_list = []
-        for row in Cs_pars:
-            parent_bin = []
-            for j, v in enumerate(parent_vars):
-                parent_bin.append(v.get_Cst_to_Cbin(row[j]).unsqueeze(0))
-            parent_bin = torch.cat(parent_bin, dim=0)  # (n_parents, max_basic)
-            bin_list.append(parent_bin)
+        max_basic = max(len(v.values) for v in parent_vars)
+
+        parent_bins = []
+        for j, v in enumerate(parent_vars):
+            b = v.get_Cst_to_Cbin(Cs_pars[:, j])       # (n_samples, n_basic_j)
+            if b.shape[1] < max_basic:
+                b = torch.nn.functional.pad(b, (0, max_basic - b.shape[1]))
+            parent_bins.append(b.unsqueeze(1))         # (n_samples, 1, max_basic)
 
         # shape (n_samples_total, n_parents, max_basic)
-        samples_bin = torch.stack(bin_list, dim=0).to(device)
+        samples_bin = torch.cat(parent_bins, dim=1).to(device)
 
         # Container for output samples
         Cs_out = []

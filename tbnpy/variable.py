@@ -1,8 +1,48 @@
 import numpy as np
+from functools import lru_cache
 from itertools import chain, combinations
 from math import comb
 
 import torch
+
+
+# The composite-state lookup tables depend only on the number of basic states,
+# so they are built once per cardinality and shared. Rebuilding them per call
+# dominated Cpt.sample for nodes with parents.
+@lru_cache(maxsize=None)
+def _state_to_binary_lookup(n_basic):
+    """state index f(S) -> binary indicator row. Shape (n_composite, n_basic)."""
+    all_sets = [{i for i in range(n_basic) if (bits >> i) & 1}
+                for bits in range(1, 2 ** n_basic)]
+
+    def f(S):
+        m = len(S)
+        s_sorted = sorted(S)
+        first = sum(comb(n_basic, k) for k in range(1, m))
+        subtract = sum(comb(n_basic - 1 - s_i, m + 1 - (i + 1))
+                       for i, s_i in enumerate(s_sorted))
+        return first + comb(n_basic, m) - 1 - subtract
+
+    states = [f(S) for S in all_sets]
+    lookup = torch.zeros((max(states) + 1, n_basic), dtype=torch.int8)
+    for S, state in zip(all_sets, states):
+        for b in S:
+            lookup[state, b] = 1
+    return lookup
+
+
+@lru_cache(maxsize=None)
+def _bitmask_to_state_lookup(n_basic):
+    """bitmask -> composite state f(S). Shape (2**n_basic,)."""
+    lookup = torch.full((2 ** n_basic,), -1, dtype=torch.long)
+    for bitmask in range(1, 2 ** n_basic):
+        S = [i for i in range(n_basic) if (bitmask >> i) & 1]
+        m = len(S)
+        term1 = sum(comb(n_basic, k) for k in range(1, m))
+        subtract = sum(comb(n_basic - 1 - s_i, m + 1 - (i + 1))
+                       for i, s_i in enumerate(S))
+        lookup[bitmask] = term1 + comb(n_basic, m) - 1 - subtract
+    return lookup
 
 class Variable:
     """
@@ -245,45 +285,13 @@ class Variable:
 
         Returns:
             lookup (torch.Tensor): shape (n_composite_states, n_basic)
-            ordered_states: a list of sets (optional debug)
+
+        Note:
+            The table depends only on the number of basic states, so it is
+            built once per cardinality and cached. The returned tensor is
+            shared -- do not modify it in place.
         """
-        n = len(self.values)
-        max_states = 2**n  # including empty set
-
-        # We exclude empty set (state index = -1)
-        all_sets = []
-        for integer in range(1, max_states):  # skip 0 = empty
-            # Convert integer bitmap to set of basic indices
-            S = {i for i in range(n) if (integer >> i) & 1}
-            all_sets.append(S)
-
-        # Step 1: compute composite index f(S) for each S
-        def f(S):
-            m = len(S)
-            s_sorted = sorted(S)
-
-            # First term: sum over smaller subsets
-            first_term = sum(comb(n, k) for k in range(1, m))
-
-            # Second term: lexicographic rank inside size-m group
-            subtract_sum = sum(comb(n-1 - s_i, m+1 - (i+1)) 
-                            for i, s_i in enumerate(s_sorted))
-            second_term = comb(n, m) - 1 - subtract_sum
-
-            return first_term + second_term
-
-        # Compute states and allocate lookup table
-        composite_states = [f(S) for S in all_sets]
-        n_composite = max(composite_states) + 1
-
-        lookup = torch.zeros((n_composite, n), dtype=torch.int8)
-
-        # Fill lookup: for state index f(S), mark binary vector
-        for S, state in zip(all_sets, composite_states):
-            for b in S:
-                lookup[state, b] = 1
-
-        return lookup
+        return _state_to_binary_lookup(len(self.values))
 
     def get_Cst_to_Cbin(self, Cst):
         """
@@ -307,36 +315,12 @@ class Variable:
     def build_bitmask_to_state_lookup(self):
         """
         Build lookup table mapping bitmask id -> composite state f(S).
-        No loops over events. Only loops over all subsets (2^n subsets).
+
+        Note:
+            Cached per cardinality; the returned tensor is shared, so do not
+            modify it in place.
         """
-
-        n_basic = len(self.values)
-        max_subsets = 2 ** n_basic
-        lookup = torch.full((max_subsets,), -1, dtype=torch.long)
-
-        for bitmask in range(max_subsets):
-
-            # Skip empty set (no composite index)
-            if bitmask == 0:
-                continue
-
-            # Find S = {i | bitmask has bit i}
-            S = [i for i in range(n_basic) if (bitmask >> i) & 1]
-            m = len(S)
-
-            # ---- First term: sum_{k=1}^{m-1} C(n_basic, k)
-            term1 = sum(comb(n_basic, k) for k in range(1, m))
-
-            # ---- Second term: C(n_basic,m) - 1 - sum C(...)
-            subtract_sum = 0
-            for i, s_i in enumerate(S):
-                subtract_sum += comb(n_basic - 1 - s_i, m + 1 - (i + 1))
-
-            term2 = comb(n_basic, m) - 1 - subtract_sum
-
-            lookup[bitmask] = term1 + term2
-
-        return lookup
+        return _bitmask_to_state_lookup(len(self.values))
 
     def get_Cbin_to_Cst(self, Cbin):
         """
