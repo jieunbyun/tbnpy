@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "tbnpy"
-version = "0.2.0"
+dynamic = ["version"]   # read from tbnpy/__init__.py, the one place it is written
 description = "Tensor-based Bayesian Network (TBN) toolkit for scalable probabilistic inference"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Ji-Eun Byun" }]
 requires-python = ">=3.9"
 
@@ -37,6 +38,9 @@ Documentation = "https://jieunbyun.github.io/tbnpy/"
 [tool.setuptools]
 # If your package directory is "tbnpy/" at the repo root, this is enough.
 packages = ["tbnpy"]
+
+[tool.setuptools.dynamic]
+version = { attr = "tbnpy.__version__" }
 
 [tool.setuptools.package-data]
 # If you have any non-.py files inside the package you want to ship, list patterns here.

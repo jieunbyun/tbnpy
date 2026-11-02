@@ -6,6 +6,7 @@ repo_root = os.path.abspath(os.path.join(BASE, "../.."))
 if repo_root not in sys.path:
     sys.path.append(repo_root)
 
+import tbnpy
 from tbnpy import cpt, variable
 import numpy as np
 import torch
@@ -45,5 +46,18 @@ def define_probs(varis, device='cpu'):
 if __name__ == '__main__':
     varis = define_variables()
     probs = define_probs(varis, device=device)
-    print("Defined variables and probabilities.")
+
+    # Typing a name shows what it is: every Variable and every probability object
+    # prints as one line.
+    print(varis)
+    print(probs)
+
+    # str() (or print) gives the longer reading: each variable's domain, and a
+    # Cpt's table with its state labels.
+    print(probs['C'])
+    print(probs['B'])
+
+    # Sample a few rows through the whole model to confirm that every object keeps
+    # tbnpy's protocol, before running inference on it.
+    print(tbnpy.check_model(probs))
 

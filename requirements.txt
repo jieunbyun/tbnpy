@@ -9,7 +9,7 @@ pandas>=1.5        # evidence handling, tests
 pytest>=7.0        # test suite
 
 # Network analysis
-,ndtools-duco>=0.1.5
+ndtools-duco>=0.1.5
 
 # Optional (recommended for development)
 scipy>=1.9         # useful for extensions / numerical utilities

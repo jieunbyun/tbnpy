@@ -35,4 +35,5 @@ For further reading:
    api/modules
    examples/EMA_aftershock
    examples/abcde_example
+   changelog
 

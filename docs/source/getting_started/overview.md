@@ -49,6 +49,12 @@ A typical TBNpy workflow consists of the following steps:
    - For discrete and tractable variables, use conditional probability tensors (CPTs).
    - For continuous or intractable variables, use custom probability distribution classes.
      - Custom distributions must accept tensor inputs, and all operations must be implemented using PyTorch tensor operations.
+     - Inheriting `tbnpy.Probability` is optional; it makes each object print as the distribution it defines.
+   - Alternatively, write the whole model as data (a JSON spec) and compile it with `tbnpy.compile`.
 
-4. **Inference**  
+4. **Checking**  
+   Type a variable's or probability object's name to see what it is, and call
+   `tbnpy.check_model(probs)` to confirm that every object keeps tbnpy's protocol.
+
+5. **Inference**  
    Perform probabilistic inference using Monte Carlo sampling–based methods.

@@ -1,9 +1,10 @@
 import numpy as np
 import torch
 
+from tbnpy.probability import Probability
 from tbnpy.variable import Variable
 
-class Cpt(object):
+class Cpt(Probability):
     '''Defines the conditional probability Tensor (CPT).
     CPT is based on the same concept as CPM in Ref: Byun et al. (2019). Matrix-based Bayesian Network for
     efficient memory storage and flexible inference. 
@@ -53,21 +54,25 @@ class Cpt(object):
         else:
             return False
 
-    def __repr__(self):
-        details = [
-            f"{self.__class__.__name__}(childs={get_names(self.childs)},",
-            f"parents={get_names(self.parents)},",
-            f"C={self.C},",
-            f"p={self.p},",
-        ]
+    # Readings (repr and str come from Probability)
+    def form(self):
+        n = self._C.shape[0]
+        return f"table of {n} row{'' if n == 1 else 's'}"
 
-        if self._Cs.size:
-            details.append(f"Cs={self._Cs},")
-        if self._ps.size:
-            details.append(f"ps={self._ps},")
-
-        details.append(")")
-        return "\n".join(details)
+    def form_details(self):
+        """The event table, one row per line, with state labels and probabilities."""
+        variables = self.childs + self.parents
+        C = self._C.detach().cpu().tolist()
+        p = self._p.detach().cpu().reshape(-1).tolist()
+        header = [v.name for v in variables] + ["p"]
+        rows = [[_state_label(v, s) for v, s in zip(variables, row)] + [f"{q:.4g}"]
+                for row, q in zip(C[:_SHOW_ROWS], p[:_SHOW_ROWS])]
+        widths = [max([len(h)] + [len(r[j]) for r in rows]) for j, h in enumerate(header)]
+        lines = ["  ".join(h.ljust(w) for h, w in zip(header, widths)).rstrip()]
+        lines += ["  ".join(c.ljust(w) for c, w in zip(r, widths)).rstrip() for r in rows]
+        if len(C) > _SHOW_ROWS:
+            lines.append(f"... {len(C) - _SHOW_ROWS} more rows")
+        return lines
 
     # Properties
     @property
@@ -1028,6 +1033,23 @@ class Cpt(object):
 
 def get_names(var_list):
     return [x.name for x in var_list]
+
+
+#: Rows of the event table that str(cpt) shows.
+_SHOW_ROWS = 12
+
+
+def _state_label(var, state):
+    """A composite-state index as its label, or as the set of labels it stands for."""
+    values = var.values
+    if not isinstance(values, (list, np.ndarray)):
+        return str(state)
+    if 0 <= state < len(values):
+        return str(values[state])
+    try:
+        return "{" + ", ".join(str(values[i]) for i in sorted(var.get_set(state))) + "}"
+    except Exception:
+        return str(state)
 
 
 

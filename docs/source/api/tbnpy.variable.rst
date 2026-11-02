@@ -22,6 +22,15 @@ Quick start
    st = v.get_state({1, 2})
    S  = v.get_set(st)
 
+A variable prints as one line, so a dictionary of them reads as a list:
+
+.. code-block:: python
+
+   >>> v
+   Variable(name='damage_state', values=['none', 'minor', 'major'])
+   >>> Variable("C", (-torch.inf, torch.inf))
+   Variable(name='C', values=(-inf, inf))
+
 Public API
 ----------
 

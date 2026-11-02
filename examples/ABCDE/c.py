@@ -1,7 +1,9 @@
 import torch
 from torch.distributions import Normal
 
-class C:
+from tbnpy.probability import Probability
+
+class C(Probability):
     def __init__(self, childs, parents, sigma=0.6, device="cpu"):
         """
         C | A,B ~ Normal(A + B, sigma^2)
@@ -10,9 +12,7 @@ class C:
         parents : [Variable A, Variable B]
         sigma   : fixed noise std (float)
         """
-        self.childs = childs
-        self.parents = parents
-        self.device = device
+        super().__init__(childs, parents, device)   # sets childs, parents, device
 
         self.sigma = float(sigma)
 
@@ -27,6 +27,11 @@ class C:
         self.B_values = torch.tensor(
             self.B.values, dtype=torch.float32, device=device
         )
+
+    # ------------------------------------------------------------------
+    def form(self):
+        """What repr(), str() and tbnpy.describe() print as this object's form."""
+        return f"normal(loc={self.A.name} + {self.B.name}, scale={self.sigma:g})"
 
     # ------------------------------------------------------------------
     def sample(self, Cs_pars):

@@ -93,6 +93,12 @@ A custom probability model class should include (at minimum) the following metho
 All methods should be compatible with both CPU and GPU tensors and should use
 PyTorch tensor operations for efficiency.
 
+The three classes inherit :class:`tbnpy.Probability <tbnpy.probability.Probability>`.
+This is optional (tbnpy accepts any class with the attributes and methods above), but
+it makes each object print as the distribution it defines. Calling
+``super().__init__(childs, parents, device)`` sets ``childs``, ``parents`` and ``device``,
+and each class says what its distribution is in a one-line ``form()`` method.
+
 
 Step 1: defining variables and probability models
 -------------------------------------------------
@@ -118,6 +124,77 @@ The full model definition is shown below.
 .. literalinclude:: ../../../examples/ABCDE/s1_define_model.py
    :language: python
    :linenos:
+
+Inspecting and checking the model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Running ``python examples/ABCDE/s1_define_model.py`` prints what was defined. Each
+variable and each probability object reads as one line:
+
+.. code-block:: text
+
+   {'A': Variable(name='A', values=[-0.3, 0.3]), 'B': Variable(name='B', values=[-0.2, 0.0, 0.2]),
+    'C': Variable(name='C', values=(-inf, inf)), 'OC': Variable(name='OC', values=(-inf, inf)),
+    'D': Variable(name='D', values=[0, 1]), 'E': Variable(name='E', values=(-inf, inf))}
+   {'A': Cpt(P(A): table of 2 rows), 'B': Cpt(P(B): table of 3 rows),
+    'C': C(P(C | A, B): normal(loc=A + B, scale=0.6)), 'OC': OC(P(OC | C): normal(loc=C, scale=0.5)),
+    'D': Cpt(P(D): table of 2 rows), 'E': E(P(E | C, D): deterministic: E = C if D == 0, else 0)}
+
+``print`` gives one object at length, with each variable's domain and, for a
+:class:`~tbnpy.cpt.Cpt`, its table with state labels:
+
+.. code-block:: text
+
+   P(C | A, B)  [C]
+     form    normal(loc=A + B, scale=0.6)
+     child   C  continuous (-inf, inf)
+     parent  A  discrete, 2 states: -0.3, 0.3
+     parent  B  discrete, 3 states: -0.2, 0.0, 0.2
+   P(B)  [Cpt]
+     form    table of 3 rows
+     child   B  discrete, 3 states: -0.2, 0.0, 0.2
+     B     p
+     -0.2  0.3
+     0.0   0.4
+     0.2   0.3
+
+Last, :func:`tbnpy.check_model <tbnpy.probability.check_model>` samples a few rows
+through the whole model and confirms that every object keeps tbnpy's protocol: the
+right shapes, values inside each variable's domain, and a ``log_prob`` that agrees with
+``sample``. Had ``C.log_prob`` read its columns in the wrong order, it would say so
+here rather than through a wrong posterior later:
+
+.. code-block:: text
+
+   Model check: 6 probability objects, 6 variables, 8 sampled rows: no problems found
+
+The same model as a spec
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The model can also be written as data. ``abcde.tbn.json`` describes the same six
+variables and nodes, with **C** and **OC** as ``distribution`` nodes, **E** as an
+``equation`` node, and **A**, **B** and **D** as ``discrete_cpt`` nodes
+(see :mod:`tbnpy.spec`):
+
+.. literalinclude:: ../../../examples/ABCDE/abcde.tbn.json
+   :language: json
+
+``s1_define_model_from_spec.py`` compiles it with :func:`tbnpy.compile.compile_file`,
+prints the compiled nodes, checks them, and confirms that they give the same numbers
+as the hand-written classes. Everything that follows runs on either model.
+
+.. literalinclude:: ../../../examples/ABCDE/s1_define_model_from_spec.py
+   :language: python
+   :linenos:
+
+Its output begins:
+
+.. code-block:: text
+
+   {'A': Cpt(P(A): table of 2 rows), 'B': Cpt(P(B): table of 3 rows),
+    'C': DistributionSpecNode(P(C | A, B): normal(loc=A + B, scale=0.6)),
+    'OC': DistributionSpecNode(P(OC | C): normal(loc=C, scale=0.5)),
+    'D': Cpt(P(D): table of 2 rows), 'E': EquationSpecNode(P(E | C, D): E = If(D == 0, C, 0))}
 
 Step 2: evidence and scalable inference
 ---------------------------------------

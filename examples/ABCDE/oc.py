@@ -1,19 +1,23 @@
 import torch
 from torch.distributions import Normal
 
-class OC:
+from tbnpy.probability import Probability
+
+class OC(Probability):
     def __init__(self, childs, parents, device='cpu'):
         """
         childs: [OC variable]
         parents: [C variable]
-        OC = C + Normal(0, 1)
+        OC = C + Normal(0, 0.5^2)
         """
-        self.childs = childs
-        self.parents = parents
-        self.device = device
+        super().__init__(childs, parents, device)
 
         # standard deviation is fixed
         self.std = torch.tensor(0.5, device=device)
+
+    # --------------------------------------------------------------
+    def form(self):
+        return f"normal(loc={self.parents[0].name}, scale={self.std.item():g})"
 
     # --------------------------------------------------------------
     def sample(self, Cs_pars):

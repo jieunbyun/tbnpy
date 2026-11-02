@@ -1,5 +1,5 @@
 tbnpy.cpt
-========
+=========
 
 Overview
 --------
@@ -13,6 +13,25 @@ The :class:`~tbnpy.cpt.Cpt` class stores a **conditional probability tensor** (C
 
 It also supports sampling and log-probability evaluation, including cases where parent
 assignments are provided as samples (optionally aligned with multiple evidence rows).
+
+:class:`~tbnpy.cpt.Cpt` is a :class:`~tbnpy.probability.Probability`, so it prints as the
+distribution it defines; ``print`` adds its table, with state labels in place of
+indices and a composite state shown as the set of labels it stands for:
+
+.. code-block:: python
+
+   >>> cpt
+   Cpt(P(X | Y): table of 4 rows)
+   >>> print(cpt)
+   P(X | Y)  [Cpt]
+     form    table of 4 rows
+     child   X  discrete, 2 states: 0, 1
+     parent  Y  discrete, 2 states: 0, 1
+     X  Y  p
+     0  0  0.8
+     1  0  0.2
+     0  1  0.1
+     1  1  0.9
 
 Quick start
 -----------

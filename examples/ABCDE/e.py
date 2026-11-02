@@ -1,6 +1,8 @@
 import torch
 
-class E:
+from tbnpy.probability import Probability
+
+class E(Probability):
     def __init__(self, childs, parents, device='cpu'):
         """
         childs: list [E] (unused but consistent with your structure)
@@ -8,9 +10,11 @@ class E:
             C: continuous-valued parent (tensor-like values for samples)
             D: binary parent (0 or 1)
         """
-        self.childs = childs
-        self.parents = parents
-        self.device = device
+        super().__init__(childs, parents, device)
+
+    # ------------------------------------------------------------------
+    def form(self):
+        return "deterministic: E = C if D == 0, else 0"
 
     # ------------------------------------------------------------------
     def sample(self, Cs_pars):

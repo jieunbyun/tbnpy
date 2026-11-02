@@ -22,6 +22,23 @@ The online documentation includes:
 - Worked examples (including the ABCDE example)
 - Repository structure and design rationale
 
+## A first look
+
+```python
+import tbnpy
+from tbnpy.compile import compile_file
+
+spec, varis, probs = compile_file("examples/ABCDE/abcde.tbn.json")
+
+probs["C"]                      # DistributionSpecNode(P(C | A, B): normal(loc=A + B, scale=0.6))
+print(probs["C"])               # each variable with its domain
+print(tbnpy.check_model(probs)) # every object keeps the protocol: no problems found
+```
+
+A probability object is any class with `childs`, `parents`, `sample` and `log_prob`.
+Inheriting `tbnpy.Probability` is optional and makes it print as above. What changed
+in each version is in [CHANGELOG.md](CHANGELOG.md).
+
 ## Repository structure
 
 ```
@@ -36,7 +53,7 @@ tbnpy/
 
 ## Installation
 
-The `ndtools` utilities can be installed either as a **released package** from PyPI
+tbnpy can be installed either as a **released package** from PyPI
 or in **editable (developer) mode** from the source repository.
 
 ### Using pip (recommended for users)
@@ -75,7 +92,19 @@ pip install -e .
 tbnpy is under active development.  
 The API may evolve as new modelling patterns, inference strategies, and large-scale case studies are incorporated.
 
-## Citation
+## Releasing
+
+The version is written once, in `tbnpy/__init__.py`. To release, update it and
+`CHANGELOG.md`, commit, then push a tag of the same version:
+
+```bash
+git tag v0.3.0
+git push origin v0.3.0
+```
+
+The `release` workflow runs the tests, checks that the tag matches the version, builds
+the package from the tagged commit, and publishes it to PyPI. Running the workflow by
+hand (Actions, then *Run workflow*) publishes to TestPyPI instead, for a rehearsal.
 
 ## Citation
 

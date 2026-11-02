@@ -1,5 +1,5 @@
 tbnpy.inference
-==============
+===============
 
 Overview
 --------
@@ -15,6 +15,10 @@ A *probability object* ``P`` is assumed to expose:
 - ``P.sample(...)`` : sampling method (signature depends on whether parents exist)
 - ``P.log_prob(...)`` : log-probability evaluation for rows of ``[childs | parents]``
 - (optionally) ``P.sample_evidence(...)`` : evidence-aligned sampling
+
+:doc:`tbnpy.probability` states this protocol in full. Before a long run, call
+:func:`tbnpy.check_model <tbnpy.probability.check_model>` once to confirm that every
+object keeps it; the functions here only check the graph.
 
 The key idea is to:
 

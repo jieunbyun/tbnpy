@@ -447,10 +447,10 @@ def test_sample1(dict_cpt3):
         assert all(int(x) in {0, 1} for x in unique_vals), \
             f"Invalid sampled state detected: {unique_vals}"
 
-        # Check probabilities returned match p[event_idx]
+        # Check probabilities returned match p[event_idx] (ps holds log probabilities)
         event_idx = (Cs == 0).long().squeeze(1)   # vectorized
         expected_ps = T.p[event_idx]
-        assert torch.allclose(ps, expected_ps.squeeze()), \
+        assert torch.allclose(ps.exp(), expected_ps.squeeze()), \
             f"ps mismatch:\nexpected {expected_ps}\n got {ps}"
 
         # Basic sanity: over 10 samples, we expect *at least one* 1 and one 0
@@ -531,8 +531,8 @@ def test_sample3(dict_cpt5):
         # Expected probability
         expected_p = p[event_idx]
 
-        # Compare against ps[i]
-        assert abs(ps[i].item() - expected_p.item()) < 1e-6, \
+        # Compare against ps[i] (a log probability)
+        assert abs(ps[i].exp().item() - expected_p.item()) < 1e-6, \
             f"Row {i}: probability mismatch: expected {expected_p}, got {ps[i]}"
 
 
@@ -565,7 +565,7 @@ def test_sample4(dict_cpt2):
         assert ps.shape == (4,)
 
         Cs_list = Cs.squeeze(1).tolist()
-        ps_list = ps.tolist()
+        ps_list = ps.exp().tolist()   # ps holds log probabilities
 
         for i, child in enumerate(Cs_list):
             # Look up expected probability for that child state
@@ -604,9 +604,9 @@ def test_sample5(dict_cpt1):
         assert Cs.shape == (4, 1)
         assert ps.shape == (4,)
 
-        # Convert to Python lists
+        # Convert to Python lists (ps holds log probabilities)
         Cs_list = Cs.squeeze(1).tolist()
-        ps_list = ps.tolist()
+        ps_list = ps.exp().tolist()
 
         # Check each sample
         for i in range(4):
@@ -616,7 +616,7 @@ def test_sample5(dict_cpt1):
                 f"Row {i}: got child {Cs_list[i]}, expected {expected_child[i]}"
 
             # Check returned probability
-            assert abs(ps_list[i] - expected_ps[i]) < 1e-12, \
+            assert abs(ps_list[i] - expected_ps[i]) < 1e-6, \
                 f"Row {i}: ps {ps_list[i]}, expected {expected_ps[i]}"
             
 def test_log_prob1(dict_cpt1):
@@ -812,8 +812,8 @@ def test_sample_evidence1(dict_cpt2):
             # Expected probability
             expected_p = expected_map[key]
 
-            # Check probability matches
-            assert abs(ps[i, j].item() - expected_p) < 1e-6, \
+            # Check probability matches (ps holds log probabilities)
+            assert abs(ps[i, j].exp().item() - expected_p) < 1e-6, \
                 f"Incorrect prob for Cs[{i},{j}]={key}. " \
                 f"Got {ps[i,j].item()}, expected {expected_p}"
             

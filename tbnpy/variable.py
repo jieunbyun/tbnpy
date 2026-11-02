@@ -109,10 +109,7 @@ class Variable:
             return False
 
     def __repr__(self):
-        return (
-            f"Variable(name={repr(self._name)},\n"
-            f"  values={repr(self._values)},\n"
-        )
+        return f"Variable(name={self._name!r}, values={self._values!r})"
 
     # Property for 'name'
     @property
