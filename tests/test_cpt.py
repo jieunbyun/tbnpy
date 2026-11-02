@@ -434,6 +434,10 @@ def test_sample1(dict_cpt3):
 
     n_sample = 10
 
+    # Unseeded, 10 draws with P(0) = 0.3 are all ones with probability 0.7**10,
+    # so over 10 repeats the "at least one 0" check below failed about 1 run in 4.
+    torch.manual_seed(0)
+
     for _ in range(10):   # repeat multiple times to ensure robustness
 
         Cs, ps = T.sample(n_sample=n_sample)   # returns (Cs, idx, ps)
