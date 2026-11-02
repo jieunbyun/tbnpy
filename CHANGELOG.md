@@ -28,8 +28,10 @@
   now one line; `print(cpt)` shows its table with state labels.
 - `repr(Variable)` is one line, `Variable(name='A', values=[-0.3, 0.3])`. Before, it
   spanned two lines and left its parenthesis open.
-- The ABCDE classes `C`, `OC` and `E` inherit `Probability`, and
-  `s1_define_model.py` prints and checks the model it defines.
+- The probability classes of both examples, ABCDE and EMA aftershock, inherit
+  `Probability`, and each example's `s1_define_model.py` / `s01_define_model.py` prints
+  and checks the model it defines.
+- `describe` shortens a list of more than ten childs or parents.
 - The version is written once, in `tbnpy/__init__.py`. `pyproject.toml` and the docs
   read it from there.
 
@@ -37,14 +39,25 @@
 
 - `spec.py`, `compile.py`, `expr.py` and `diagnostics.py`, with their tests, are now in
   the repository. 0.2.0 shipped them, but they had not been committed.
+- `HybridAdaptiveMH` failed with an `AttributeError` when `variables` was a dictionary,
+  although its signature allows one.
+- EMA aftershock example, found by `check_model`: the aftershock damage `Dt` returned a
+  log density of `+inf` for most active aftershock rows, because `erfc` underflowed in
+  single precision when the truncation bound lay far in the tail; it now uses
+  `torch.special.log_ndtr`. A sampled `D_t` could also round to just below
+  `D_{t-1}`, which its own `log_prob` rejects.
 - `tests/test_cpt.py` compared `Cpt.sample`'s log probabilities with probabilities.
 - `requirements.txt` had a stray comma before `ndtools-duco`.
+- Docs: `inference.sample`'s `on_batch` and `accumulate_query`, and
+  `HybridAdaptiveMH`'s constructor, are documented; `Cpt.ps` is always a log probability.
 
 ### Compatibility
 
 Nothing is removed or renamed. A probability object that does not inherit
 `Probability` works as before, and inference, sampling and log probabilities give the
-same numbers. Only the text of `repr(Variable)` and `repr(Cpt)` changes.
+same numbers. Only the text of `repr(Variable)` and `repr(Cpt)` changes. In the EMA
+example, `Dt`'s log densities change where they were infinite, and its samples change
+only where they had rounded below `D_{t-1}`.
 
 ## 0.2.0
 

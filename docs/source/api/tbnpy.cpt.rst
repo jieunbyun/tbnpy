@@ -109,7 +109,7 @@ Cpt
       Stored samples of assignments (optional). See :meth:`~tbnpy.cpt.Cpt.sample` and
       :meth:`~tbnpy.cpt.Cpt.sample_evidence`.
    ps
-      Stored sampling probabilities/log-probabilities (optional).
+      Stored log probabilities of the samples in ``Cs`` (optional).
    evidence
       Observations of the child variables (optional). See :attr:`~tbnpy.cpt.Cpt.evidence`.
    device
@@ -128,7 +128,8 @@ Cpt
    Cs : torch.Tensor
       Sample matrix (shape depends on the sampling mode).
    ps : torch.Tensor
-      Sampling probabilities (stored as log probabilities in some methods).
+      Log probabilities of the samples in ``Cs``: every sampling method returns log
+      probabilities, never probabilities.
    evidence : torch.Tensor
       Evidence matrix for child variables, shape ``(n_evidence, n_childs)``.
 

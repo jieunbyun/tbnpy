@@ -53,6 +53,7 @@ REQUIRED = ("childs", "parents", "sample", "log_prob")
 #: How many names or rows a one-line or tabular reading shows before eliding.
 _SHOW_NAMES = 4
 _SHOW_STATES = 6
+_SHOW_VARIABLES = 10
 _SHOW_ROWS = 12
 
 
@@ -135,8 +136,15 @@ def describe(obj) -> str:
         lines.append(f"  form    {form}")
     width = max([len(v.name) for v in list(obj.childs) + list(obj.parents)] + [1])
     for role, variables in (("child ", obj.childs), ("parent", obj.parents)):
-        for v in variables:
-            lines.append(f"  {role}  {v.name:<{width}}  {domain(v)}")
+        shown = list(variables)
+        if len(shown) > _SHOW_VARIABLES:
+            shown = shown[:_SHOW_VARIABLES - 2] + [None] + shown[-1:]
+        for v in shown:
+            if v is None:
+                hidden = len(variables) - (_SHOW_VARIABLES - 1)
+                lines.append(f"  {role}  ... {hidden} more ({len(variables)} {role.strip()}s in all)")
+            else:
+                lines.append(f"  {role}  {v.name:<{width}}  {domain(v)}")
     lines += ["  " + line for line in _form_details(obj)]
     return "\n".join(lines)
 

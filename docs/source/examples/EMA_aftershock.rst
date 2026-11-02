@@ -70,6 +70,76 @@ aftershock coordinates are deterministic functions of ``L_0``, ``R_t``, and
    :language: python
    :linenos:
 
+Inspecting and checking the model
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Every probability class of this example inherits
+:class:`tbnpy.Probability <tbnpy.probability.Probability>` and says what its
+distribution is in a ``form()`` method, so a variable or a probability object prints
+as one line. With ``K_max = 2``, the model has 1,178 of each; running
+``python s01_define_model.py`` prints the mainshock and the first aftershock slot for
+edge ``e0001``:
+
+.. code-block:: text
+
+   Variable(name='L_x_0', values=(-inf, inf))
+   Variable(name='M_0', values=(-inf, inf))
+   Variable(name='K', values=[0, 1, 2])
+   Variable(name='X_0_e0001', values=[0, 1])
+   Variable(name='S_0', values=[0, 1, 2])
+   ...
+
+.. code-block:: text
+
+   L_x_0      L0(P(L_x_0): uniform(low=-15.4647, high=92.7881))
+   L_y_0      L0(P(L_y_0): uniform(low=-15.088, high=90.528))
+   M_0        M0(P(M_0): truncated exponential(rate=0.76) on [6, 8.5])
+   K          K(P(K | M_0): truncated Poisson on 0..2, mean by modified Omori from M_0 (T=7, c=0.05, p=1.08, a=-1.67, b=0.91))
+   A_0_e0001  A(P(A_0_e0001 | M_0, L_x_0, L_y_0): lognormal(loc=Campbell-1997 mean of M_0 and the distance from (L_x_0, L_y_0) to (56.8678, 73.0335), scale=0.52); 0 if M_0 = 0)
+   D_0_e0001  D0(P(D_0_e0001 | A_0_e0001): lognormal(loc=-1.91 + 2.51 ln A_0_e0001, scale=0.7))
+   X_0_e0001  X(P(X_0_e0001 | D_0_e0001): X_0_e0001 = 1 if D_0_e0001 < 0.4, else 0)
+   S_0        S(P(S_0 | X_0_e0001, X_0_e0002, X_0_e0003, ..., X_0_e0129 (129)): system state 0..2 from RSR rules over 129 edges; unclassified samples get state -1)
+   R_1        R(P(R_1 | K): density r^-1.35 on [1, 50] if K >= 1, else 0)
+   V_1        V(P(V_1 | K): uniform(low=0, high=2 pi) if K >= 1, else 0)
+   L_x_1      Lt(P(L_x_1 | L_x_0, R_1, V_1): L_x_1 = L_x_0 + R_1 cos(V_1))
+   L_y_1      Lt(P(L_y_1 | L_y_0, R_1, V_1): L_y_1 = L_y_0 + R_1 sin(V_1))
+   M_1        Mt(P(M_1 | M_0, K): truncated exponential(rate=0.76) on [4.5, M_0 - 1.2] if K >= 1, else 0)
+   A_1_e0001  A(P(A_1_e0001 | M_1, L_x_1, L_y_1): lognormal(loc=Campbell-1997 mean of M_1 and the distance from (L_x_1, L_y_1) to (56.8678, 73.0335), scale=0.52); 0 if M_1 = 0)
+   D_1_e0001  Dt(P(D_1_e0001 | A_1_e0001, D_0_e0001): lognormal(loc=-1.65 + 0.71 ln A_1_e0001 + 0.19 ln D_0_e0001 - 0.33 ln A_1_e0001 ln D_0_e0001, scale=0.68) truncated below at D_0_e0001; D_0_e0001 if A_1_e0001 = 0)
+   X_1_e0001  X(P(X_1_e0001 | D_1_e0001): X_1_e0001 = 1 if D_1_e0001 < 0.4, else 0)
+   S_1        S(P(S_1 | X_1_e0001, X_1_e0002, X_1_e0003, ..., X_1_e0129 (129)): system state 0..2 from RSR rules over 129 edges; unclassified samples get state -1)
+
+``print`` gives one object at length. For the system state, the list of 129 parents is
+shortened, and the class adds how many RSR reference sets each level has:
+
+.. code-block:: text
+
+   P(S_1 | X_1_e0001, X_1_e0002, X_1_e0003, ..., X_1_e0129 (129))  [S]
+     form    system state 0..2 from RSR rules over 129 edges; unclassified samples get state -1
+     child   S_1        discrete, 3 states: 0, 1, 2
+     parent  X_1_e0001  discrete, 2 states: 0, 1
+     parent  X_1_e0002  discrete, 2 states: 0, 1
+     ...
+     parent  X_1_e0008  discrete, 2 states: 0, 1
+     parent  ... 120 more (129 parents in all)
+     parent  X_1_e0129  discrete, 2 states: 0, 1
+     rules for S >= 1 vs S <= 0: 324 upper, 15 lower reference sets
+     rules for S >= 2 vs S <= 1: 530 upper, 82 lower reference sets
+
+Last, :func:`tbnpy.check_model <tbnpy.probability.check_model>` samples a few rows
+through all 1,178 objects and confirms that each keeps tbnpy's protocol:
+
+.. code-block:: text
+
+   Model check: 1178 probability objects, 1178 variables, 8 sampled rows: no problems found
+
+The check earned its place on this model. It found that the aftershock damage nodes
+``D_t`` returned a log density of ``+inf`` for two thirds of active aftershock rows:
+when the truncation bound :math:`\ln D_{t-1}` lay more than about 14 standard
+deviations above the mean, ``erfc`` underflowed to zero in single precision. Forward
+samples were unaffected, but likelihood weighting and MCMC on those nodes were not.
+``d.py`` now uses ``torch.special.log_ndtr``, which stays finite in the tail.
+
 Step 2: forward inference
 -------------------------
 

@@ -21,6 +21,8 @@ import math
 import torch
 from torch.distributions import Normal
 
+from tbnpy.probability import Probability
+
 
 def _mu(M, r):
     eps = 0.149 * torch.exp(0.647 * M)
@@ -32,7 +34,7 @@ def _mu(M, r):
     )
 
 
-class A:
+class A(Probability):
     """PGA at one fixed edge. Parents = [M_t, L_x_t, L_y_t]."""
 
     def __init__(self, childs, parents, edge_midpoint, sigma=0.52, device="cpu"):
@@ -46,6 +48,12 @@ class A:
         self.sigma = float(sigma)
         self.edge_x = float(edge_midpoint[0])
         self.edge_y = float(edge_midpoint[1])
+
+    def form(self):
+        M, lx, ly = (p.name for p in self.parents)
+        return (f"lognormal(loc=Campbell-1997 mean of {M} and the distance from "
+                f"({lx}, {ly}) to ({self.edge_x:.6g}, {self.edge_y:.6g}), "
+                f"scale={self.sigma:g}); 0 if {M} = 0")
 
     def _distance(self, lx, ly):
         return torch.sqrt((lx - self.edge_x) ** 2 + (ly - self.edge_y) ** 2)

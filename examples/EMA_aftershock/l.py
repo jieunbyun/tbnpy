@@ -22,8 +22,10 @@ import math
 
 import torch
 
+from tbnpy.probability import Probability
 
-class L0:
+
+class L0(Probability):
     """Uniform on ``[low, high]`` — one mainshock-epicentre coordinate."""
 
     def __init__(self, childs, low, high, device="cpu"):
@@ -35,6 +37,9 @@ class L0:
         self.device = device
         self.low = float(low)
         self.high = float(high)
+
+    def form(self):
+        return f"uniform(low={self.low:.6g}, high={self.high:.6g})"
 
     def _log_density(self, n_sample):
         width = self.high - self.low
@@ -62,7 +67,7 @@ class L0:
         return torch.where(in_range, val, torch.full_like(x, -float("inf")))
 
 
-class Lt:
+class Lt(Probability):
     """Deterministic aftershock-location coordinate.
 
     Parameters
@@ -82,6 +87,11 @@ class Lt:
         self.parents = parents
         self.device = device
         self.axis = axis
+
+    def form(self):
+        l0, r, v = (p.name for p in self.parents)
+        trig = "cos" if self.axis == "x" else "sin"
+        return f"{self.childs[0].name} = {l0} + {r} {trig}({v})"
 
     def _compute(self, Cs_pars):
         Cs_pars = Cs_pars.to(self.device)

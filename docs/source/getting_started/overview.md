@@ -34,6 +34,31 @@ TBNpy is particularly suited to:
 - Dynamic risk analysis in engineering systems
 - Research and prototyping of advanced Bayesian inference algorithms
 
+## Installation
+
+```bash
+pip install tbnpy
+python -c "import tbnpy; print(tbnpy.__version__)"
+```
+
+This documentation describes tbnpy 0.3.0; [the changelog](../changelog.md) lists what
+changed in each version. To work on tbnpy itself, install it in editable mode from the
+repository root with `pip install -e ".[dev]"`, and run the tests with
+`python -m pytest tests`.
+
+## A first look
+
+```python
+import tbnpy
+from tbnpy.compile import compile_file
+
+spec, varis, probs = compile_file("examples/ABCDE/abcde.tbn.json")
+
+probs                            # every node, one line each
+print(probs["C"])                # one node at length, with each variable's domain
+print(tbnpy.check_model(probs))  # every object keeps tbnpy's protocol
+```
+
 ## TBNpy workflows
 
 A typical TBNpy workflow consists of the following steps:

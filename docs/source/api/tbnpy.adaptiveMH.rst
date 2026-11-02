@@ -191,9 +191,26 @@ Adaptation configuration
 HybridAdaptiveMH
 ----------------
 
-.. py:class:: HybridAdaptiveMH
+.. py:class:: HybridAdaptiveMH(probs: dict, variables, evidence_df, n_chain: int, device="cpu", adapt: AdaptConfig = AdaptConfig())
 
    Adaptive Metropolis–Hastings sampler for hybrid Bayesian networks.
+
+   Parameters
+   ----------
+   probs
+      Mapping ``{node_name: probability_object}``. Each object is used as a factor through
+      its ``log_prob``, so every object needs one (see :doc:`tbnpy.probability`).
+   variables
+      All variables, as a list or a ``{name: Variable}`` dictionary.
+   evidence_df
+      A pandas DataFrame of evidence rows, shape ``(n_evi, n_observed)``. Its columns name
+      the observed variables; every other variable is latent and sampled.
+   n_chain
+      Number of parallel chains per evidence row.
+   device
+      Torch device for the chains.
+   adapt
+      An :class:`AdaptConfig` controlling burn-in adaptation.
 
    The sampler maintains a latent state:
 

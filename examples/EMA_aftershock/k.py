@@ -15,6 +15,8 @@ import math
 
 import torch
 
+from tbnpy.probability import Probability
+
 
 def _lambda_mean(m0, T, c, p, a, b, m_min):
     K0 = 10.0 ** (a + b * (m0 - m_min))
@@ -39,7 +41,7 @@ def _trunc_poisson_logpmf(k, lam, K_max):
     return torch.where(in_range, log_pmf - log_norm, torch.full_like(log_pmf, -float("inf")))
 
 
-class K:
+class K(Probability):
     """Truncated Poisson over ``{0,...,K_max}`` with rate from modified Omori."""
 
     def __init__(self, childs, parents, K_max=20,
@@ -59,6 +61,11 @@ class K:
         self.a = float(a)
         self.b = float(b)
         self.m_min = float(m_min)
+
+    def form(self):
+        return (f"truncated Poisson on 0..{self.K_max}, mean by modified Omori from "
+                f"{self.parents[0].name} (T={self.T:g}, c={self.c:g}, p={self.p:g}, "
+                f"a={self.a:g}, b={self.b:g})")
 
     def _mean(self, m0):
         return _lambda_mean(m0, self.T, self.c, self.p, self.a, self.b, self.m_min)

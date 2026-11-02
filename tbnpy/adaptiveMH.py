@@ -199,9 +199,8 @@ class HybridAdaptiveMH:
     ):
         self.probs = probs
         if isinstance(variables, dict):
-            variables = list(variables.values())
-        else:
-            self.variables = list(variables)
+            variables = variables.values()
+        self.variables = list(variables)
         self.device = torch.device(device)
         self.adapt = adapt
 

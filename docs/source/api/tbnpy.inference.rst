@@ -83,7 +83,7 @@ Topological utilities
 Forward sampling without evidence
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. py:function:: sample(probs: dict, query_nodes: list[str] | set[str], n_sample: int, batch_size: int = 50_000) -> dict
+.. py:function:: sample(probs: dict, query_nodes: list[str] | set[str], n_sample: int, batch_size: int = 50_000, on_batch=None, accumulate_query: bool = True) -> dict
 
    Forward-sample all ancestors of ``query_nodes`` and return samples for the **query nodes only**.
    Intermediate ancestor samples are held only for the duration of the current batch and discarded
@@ -102,6 +102,15 @@ Forward sampling without evidence
       Maximum number of samples processed per batch. Controls peak memory: at any time, only
       ``min(batch_size, n_sample)`` samples per ancestor variable are held in memory.
       Defaults to ``50_000``.
+   on_batch
+      Optional callable, invoked for each query node and batch as
+      ``on_batch(node_name, Cs_batch, ps_batch, start, end)``. Use it to consume samples
+      as they are generated, e.g. to accumulate statistics.
+   accumulate_query
+      If ``True`` (default), every batch is kept and the returned objects hold all
+      ``n_sample`` samples. If ``False``, nothing is kept and the function returns an empty
+      dictionary; use ``on_batch`` to consume the samples, so that memory stays bounded by
+      ``batch_size`` for query nodes too.
 
    Returns
    -------

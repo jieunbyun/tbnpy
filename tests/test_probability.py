@@ -122,6 +122,16 @@ def test_long_lists_of_names_are_elided():
     assert statement(Bare(childs, [])) == "P(V0, V1, V2, ..., V9 (10))"
 
 
+def test_describe_shortens_a_long_list_of_parents():
+    X = Variable("X", [0, 1])
+    parents = [Variable(f"P{i}", [0, 1]) for i in range(129)]
+    lines = describe(Bare([X], parents)).splitlines()
+    assert [line.split()[1] for line in lines[2:10]] == [f"P{i}" for i in range(8)]
+    assert lines[10] == "  parent  ... 120 more (129 parents in all)"
+    assert lines[11].split()[1] == "P128"
+    assert len(lines) == 12
+
+
 def test_a_failing_form_does_not_break_the_reading():
     class Broken(Shift):
         def form(self):

@@ -27,6 +27,8 @@ from typing import Callable, Dict, Optional, Sequence
 
 import torch
 
+from tbnpy.probability import Probability
+
 try:
     from rsr.rsr import classify_samples_with_indices  # type: ignore[import]
 except ImportError:
@@ -34,7 +36,7 @@ except ImportError:
     classify_samples_with_indices = None
 
 
-class S:
+class S(Probability):
     """Discrete system state. Parents = [X_{i,1}, ..., X_{i,N}]."""
 
     def __init__(
@@ -75,6 +77,16 @@ class S:
         self.s_fun = s_fun
         self.unknown_state = int(unknown_state)
         self.max_st = max(sys_states)
+
+    def form(self):
+        rest = "s_fun" if self.s_fun is not None else f"state {self.unknown_state}"
+        return (f"system state 0..{self.max_st} from RSR rules over "
+                f"{len(self.parents)} edges; unclassified samples get {rest}")
+
+    def form_details(self):
+        return [f"rules for S >= {s} vs S <= {s - 1}: {self.refs_upper[s].shape[0]} upper, "
+                f"{self.refs_lower[s].shape[0]} lower reference sets"
+                for s in range(1, self.max_st + 1)]
 
     def _to_onehot(self, X):
         """Convert (n, N) binary state matrix to (n, N, 2) one-hot."""

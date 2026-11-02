@@ -15,6 +15,8 @@ import math
 
 import torch
 
+from tbnpy.probability import Probability
+
 
 def _radial_sample(low, high, n, device):
     u = torch.rand_like(low)
@@ -33,7 +35,7 @@ def _radial_logpdf(r, low, high, n):
     return torch.where(in_range, val, torch.full_like(r, -float("inf")))
 
 
-class R:
+class R(Probability):
     """Radial distance at slot ``slot_idx``. Parents = [K]."""
 
     def __init__(self, childs, parents, slot_idx,
@@ -49,6 +51,10 @@ class R:
         self.r_min = float(r_min)
         self.r_max = float(r_max)
         self.n = float(n)
+
+    def form(self):
+        return (f"density r^-{self.n:g} on [{self.r_min:g}, {self.r_max:g}] "
+                f"if {self.parents[0].name} >= {self.slot_idx}, else 0")
 
     def _active(self, K_idx):
         return self.slot_idx <= K_idx

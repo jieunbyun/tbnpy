@@ -376,3 +376,14 @@ def test_run1(prepared_sampler):
     # finite values
     assert torch.isfinite(out['logp_chain']).all()
     assert torch.isfinite(out['logp_evi_chain']).all()
+
+
+def test_variables_may_be_a_dict(model_ABCDE, evidence_A):
+    probs, varis = model_ABCDE
+    names = ["A", "B", "C"]
+    probs_sub = {k: probs[k] for k in names}
+    as_list = adaptiveMH.HybridAdaptiveMH(probs=probs_sub, variables=[varis[k] for k in names],
+                                          evidence_df=evidence_A, n_chain=4)
+    as_dict = adaptiveMH.HybridAdaptiveMH(probs=probs_sub, variables={k: varis[k] for k in names},
+                                          evidence_df=evidence_A, n_chain=4)
+    assert [v.name for v in as_dict.latent_vars] == [v.name for v in as_list.latent_vars] == ["B", "C"]

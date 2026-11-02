@@ -7,7 +7,24 @@ tbnpy documentation
 ===================
 
 **TBNpy** is a Python toolkit for tensor-based Bayesian network (TBN).
-TBN tensorlises the quantification and inferences of Bayesian networks (BNs) and therby addresses BNs' scalability issues when applied to **large-scale systems** (i.e. high-dimensional system events).
+TBN tensorises the quantification and inferences of Bayesian networks (BNs) and thereby addresses BNs' scalability issues when applied to **large-scale systems** (i.e. high-dimensional system events).
+
+This is the documentation of tbnpy |release|.
+
+What's new in 0.3.0
+-------------------
+
+- **Readable models.** A variable or probability object prints as one line, such as
+  ``C(P(C | A, B): normal(loc=A + B, scale=0.6))``, and ``print`` shows each variable's
+  domain. Custom classes get this by inheriting the optional base class
+  :class:`tbnpy.Probability <tbnpy.probability.Probability>`.
+- **A model check.** :func:`tbnpy.check_model <tbnpy.probability.check_model>` samples a few
+  rows through a whole model and reports every object that breaks tbnpy's protocol.
+- **Models as data, documented.** Specs (:mod:`tbnpy.spec`, :mod:`tbnpy.compile`) and
+  diagnostics (:mod:`tbnpy.diagnostics`) now have API pages, and the ABCDE example comes
+  as a spec too.
+
+See :doc:`changelog` for the full list.
 
 Background
 ----------

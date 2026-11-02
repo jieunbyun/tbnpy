@@ -7,8 +7,10 @@ Deterministic indicator on the Park-Ang damage threshold:
 
 import torch
 
+from tbnpy.probability import Probability
 
-class X:
+
+class X(Probability):
     """Operational state. Parents = [D_{i,n}]. Child is binary 0/1."""
 
     def __init__(self, childs, parents, threshold=0.4, device="cpu"):
@@ -19,6 +21,10 @@ class X:
         self.parents = parents
         self.device = device
         self.threshold = float(threshold)
+
+    def form(self):
+        D = self.parents[0].name
+        return f"{self.childs[0].name} = 1 if {D} < {self.threshold:g}, else 0"
 
     def _operational(self, D):
         return (D < self.threshold).long()

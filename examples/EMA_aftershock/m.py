@@ -17,6 +17,8 @@ import math
 
 import torch
 
+from tbnpy.probability import Probability
+
 
 def _trunc_exp_sample(low, high, beta, device):
     """Sample from a truncated exponential with rate ``beta`` on
@@ -40,7 +42,7 @@ def _trunc_exp_logpdf(x, low, high, beta):
     return torch.where(in_range, val, torch.full_like(x, -float("inf")))
 
 
-class M0:
+class M0(Probability):
     """Mainshock magnitude: truncated exponential."""
 
     def __init__(self, childs, m_min=6.0, m_max=8.5, beta=0.76, device="cpu"):
@@ -51,6 +53,10 @@ class M0:
         self.m_min = float(m_min)
         self.m_max = float(m_max)
         self.beta = float(beta)
+
+    def form(self):
+        return (f"truncated exponential(rate={self.beta:g}) "
+                f"on [{self.m_min:g}, {self.m_max:g}]")
 
     def sample(self, Cs_pars=None, n_sample=None):
         if n_sample is None:
@@ -71,7 +77,7 @@ class M0:
         return _trunc_exp_logpdf(x, low, high, self.beta)
 
 
-class Mt:
+class Mt(Probability):
     """Aftershock magnitude at slot ``slot_idx``. Parents = [M_0, K]."""
 
     def __init__(self, childs, parents, slot_idx,
@@ -85,6 +91,11 @@ class Mt:
         self.m_min = float(m_min)
         self.beta = float(beta)
         self.delta_m = float(delta_m)
+
+    def form(self):
+        m0, K = (p.name for p in self.parents)
+        return (f"truncated exponential(rate={self.beta:g}) on "
+                f"[{self.m_min:g}, {m0} - {self.delta_m:g}] if {K} >= {self.slot_idx}, else 0")
 
     def _active(self, K_idx):
         return self.slot_idx <= K_idx

@@ -51,6 +51,7 @@ if RSR_REPO.exists() and str(RSR_REPO) not in sys.path:
     sys.path.insert(0, str(RSR_REPO))
 
 from tbnpy import inference  # noqa: E402
+from tbnpy.probability import Probability  # noqa: E402
 
 from s01_define_model import (  # noqa: E402
     define_probs,
@@ -72,7 +73,7 @@ def _sync_cuda(device):
         torch.cuda.synchronize(dev)
 
 
-class DeltaD:
+class DeltaD(Probability):
     """Degenerate distribution ``f(D = value) = 1``.
 
     Parents are kept so that the ancestor-ordering machinery in
@@ -85,6 +86,9 @@ class DeltaD:
         self.parents = parents
         self.device = device
         self.value = float(value)
+
+    def form(self):
+        return f"{self.childs[0].name} = {self.value:g} whatever its parents"
 
     def sample(self, Cs_pars):
         n = Cs_pars.shape[0]

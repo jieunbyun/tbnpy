@@ -9,8 +9,10 @@ import math
 
 import torch
 
+from tbnpy.probability import Probability
 
-class V:
+
+class V(Probability):
     """Direction at slot ``slot_idx``. Parents = [K]."""
 
     def __init__(self, childs, parents, slot_idx, device="cpu"):
@@ -20,6 +22,9 @@ class V:
         self.parents = parents
         self.device = device
         self.slot_idx = int(slot_idx)
+
+    def form(self):
+        return f"uniform(low=0, high=2 pi) if {self.parents[0].name} >= {self.slot_idx}, else 0"
 
     def _active(self, K_idx):
         return self.slot_idx <= K_idx

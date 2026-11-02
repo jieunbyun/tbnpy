@@ -32,6 +32,7 @@ RSR_REPO = REPO_ROOT.parent / "rsr"
 if RSR_REPO.exists() and str(RSR_REPO) not in sys.path:
     sys.path.insert(0, str(RSR_REPO))
 
+import tbnpy
 from tbnpy import variable
 
 try:
@@ -292,3 +293,29 @@ if __name__ == "__main__":
                          refs_upper, refs_lower, K_max=K_max, device=device)
 
     print(f"Defined {len(varis)} variables and {len(probs)} probability nodes.")
+
+    # Each Variable and each probability object prints as one line. The model is
+    # large, so show the mainshock and the first aftershock slot, for one edge.
+    edge = next(iter(edges))
+    shown = ["L_x_0", "L_y_0", "M_0", "K",
+             f"A_0_{edge}", f"D_0_{edge}", f"X_0_{edge}", "S_0",
+             "R_1", "V_1", "L_x_1", "L_y_1", "M_1",
+             f"A_1_{edge}", f"D_1_{edge}", f"X_1_{edge}", "S_1"]
+    print()
+    for name in shown:
+        print(repr(varis[name]))
+    print()
+    for name in shown:
+        print(f"{name:<10} {probs[name]!r}")
+
+    # str() (or print) gives the longer reading: each variable's domain, and
+    # the system state's rule sets. A long list of parents is shortened.
+    print()
+    print(probs[f"D_1_{edge}"])
+    print()
+    print(probs["S_1"])
+
+    # Sample a few rows through the whole model to confirm that every object
+    # keeps tbnpy's protocol, before running inference on it.
+    print()
+    print(tbnpy.check_model(probs))

@@ -24,8 +24,10 @@ import math
 import torch
 from torch.distributions import Normal
 
+from tbnpy.probability import Probability
 
-class D0:
+
+class D0(Probability):
     """Mainshock damage. Parents = [A_{0,n}]."""
 
     def __init__(self, childs, parents,
@@ -39,6 +41,10 @@ class D0:
         self.alpha = float(alpha)
         self.beta = float(beta)
         self.eps = float(eps)
+
+    def form(self):
+        A = self.parents[0].name
+        return f"lognormal(loc={self.alpha:g} + {self.beta:g} ln {A}, scale={self.eps:g})"
 
     def _mu(self, A):
         return self.alpha + self.beta * torch.log(A.clamp_min(1e-30))
@@ -67,7 +73,7 @@ class D0:
         return torch.where(d_val > 0, logp, torch.full_like(d_val, -float("inf")))
 
 
-class Dt:
+class Dt(Probability):
     """Post-aftershock damage. Parents = [A_{t,n}, D_{t-1,n}]."""
 
     def __init__(self, childs, parents,
@@ -85,6 +91,14 @@ class Dt:
         self.delta = float(delta)
         self.eps = float(eps)
 
+    def form(self):
+        A, D = (p.name for p in self.parents)
+        terms = [(self.beta, f"ln {A}"), (self.gamma, f"ln {D}"), (self.delta, f"ln {A} ln {D}")]
+        loc = f"{self.alpha:g}" + "".join(
+            f" {'-' if c < 0 else '+'} {abs(c):g} {t}" for c, t in terms)
+        return (f"lognormal(loc={loc}, scale={self.eps:g}) truncated below at {D}; "
+                f"{D} if {A} = 0")
+
     def _mu(self, A, D_prev):
         ln_a = torch.log(A.clamp_min(1e-30))
         ln_d = torch.log(D_prev.clamp_min(1e-30))
@@ -94,8 +108,9 @@ class Dt:
                 + self.delta * ln_a * ln_d)
 
     def _log_survival(self, alpha):
-        # log(1 - Phi(alpha)) = log(0.5 * erfc(alpha / sqrt(2))), numerically stable
-        return torch.log(0.5 * torch.erfc(alpha / math.sqrt(2)))
+        # log(1 - Phi(alpha)) = log Phi(-alpha). log_ndtr stays finite deep in the
+        # tail, where erfc(alpha / sqrt(2)) underflows to 0 in float32 (alpha > ~14).
+        return torch.special.log_ndtr(-alpha)
 
     def sample(self, Cs_pars):
         Cs_pars = Cs_pars.to(self.device)
@@ -114,7 +129,8 @@ class Dt:
         p_lo = _std.cdf(alpha).clamp(max=1.0 - 1e-6)
         u = (torch.rand_like(mu) * (1.0 - p_lo) + p_lo).clamp(1e-7, 1.0 - 1e-7)
         log_d = (mu + sigma * _std.icdf(u)).clamp(min=ln_d_prev)
-        Cs_active = torch.exp(log_d)
+        # exp(log x) can round to just below x, so restate the bound on D itself.
+        Cs_active = torch.maximum(torch.exp(log_d), D_prev)
 
         Cs = torch.where(active, Cs_active, D_prev)
 
