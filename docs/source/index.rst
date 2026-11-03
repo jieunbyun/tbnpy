@@ -14,6 +14,12 @@ This is the documentation of tbnpy |release|.
 What's new
 ----------
 
+In 0.3.5:
+
+- **Parameter sets in specs.** Arguments that many custom nodes share, such as one
+  fragility curve for every bridge of a class, are written once in ``parameter_sets``
+  and named by each node's ``parameter_set``.
+
 In 0.3.4:
 
 - **Half-open supports.** A continuous variable's ``support`` may be ``null`` on one side,

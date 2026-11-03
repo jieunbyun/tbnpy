@@ -396,7 +396,9 @@ def _build_cpt(node: DiscreteCptNode, childs, parents, device):
 
 
 # --------------------------------------------------------------------------
-def _build_custom(node: CustomNode, childs, parents, device, search_path, directory=None):
+def _build_custom(node: CustomNode, childs, parents, device, search_path, directory=None,
+                  arguments=None):
+    """Construct a custom node from ``arguments``: its parameter set's and its own ``kwargs``."""
     added = []
     for entry in search_path or []:
         entry = str(Path(entry).resolve())
@@ -420,7 +422,7 @@ def _build_custom(node: CustomNode, childs, parents, device, search_path, direct
                 f"{node.cls!r}"
             ) from exc
 
-        kwargs = dict(node.kwargs)
+        kwargs = dict(node.kwargs if arguments is None else arguments)
         try:
             params = inspect.signature(klass).parameters
             accepts_device = "device" in params or any(
@@ -468,6 +470,9 @@ def compile_model(spec: ModelSpec, device: str = "cpu",
                   validate: bool = True, directory=None):
     """Turn a spec into ``(varis, probs)``.
 
+    A custom node that names a ``parameter_set`` is constructed with that
+    set's arguments and its own ``kwargs`` (:meth:`~tbnpy.spec.ModelSpec.arguments`).
+
     Parameters
     ----------
     spec:
@@ -509,7 +514,8 @@ def compile_model(spec: ModelSpec, device: str = "cpu",
             continue
         if isinstance(node, CustomNode):
             probs[node.name] = _build_custom(node, childs, parents, device,
-                                             search_path, directory)
+                                             search_path, directory,
+                                             spec.arguments(node))
             continue
 
         scope = _scope_for(node, variables)

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.3.5
+
+### Added
+
+- Parameter sets in specs. Constructor arguments that many custom nodes share, such as
+  one fragility curve for every bridge of a class, are written once in the spec's
+  `parameter_sets` and named by each node's `parameter_set`. The class receives the
+  set's arguments together with the node's own `kwargs`; an argument given in both is
+  refused. Each node keeps its own probability object. `ModelSpec.arguments(node)` gives
+  a node's full arguments. Specs written by this version say `"spec_version": 3`;
+  earlier files load unchanged.
+
+### Documentation
+
+- The spec page's custom-node examples follow one network (a ground-motion field,
+  bridges sharing fragility curves, system states sharing a network) and gain sections
+  on parameter sets and on spec versions. The custom-model guide shows how a class is
+  used from a spec.
+
 ## 0.3.4
 
 ### Added

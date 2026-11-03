@@ -377,13 +377,13 @@ def test_a_node_cannot_read_its_own_childs():
         field_model(parents=["X2"])
 
 
-def test_version_1_files_still_load_and_new_files_say_version_2(tmp_path):
+def test_version_1_files_still_load_and_new_files_say_version_3(tmp_path):
     data = minimal().to_dict()
     data["spec_version"] = 1
     assert ModelSpec.from_dict(data).validate() is not None
     path = save_spec(ModelSpec.from_dict(data), tmp_path / "v.tbn.json")
     assert json.loads(path.read_text(encoding="utf-8"))["spec_version"] == 1     # a file keeps its version
-    assert field_model().to_dict()["spec_version"] == 2
+    assert field_model().to_dict()["spec_version"] == 3
 
 
 # ---------------------------------------------------------------------------
@@ -444,3 +444,51 @@ def test_a_null_support_side_is_unbounded():
     with pytest.raises(SpecError, match="low <= high"):
         ModelSpec.from_dict({**spec.to_dict(), "variables": [
             {"name": "V", "kind": "continuous", "support": [2, 1]}]})
+
+
+# ---------------------------------------------------------------------------
+# Parameter sets: arguments many nodes share, written once (spec version 3)
+# ---------------------------------------------------------------------------
+def shared_model(**y_overrides):
+    """X1 and X2 share one parameter set; Y has its own location and the set's scale."""
+    def node(name, **extra):
+        return {"name": name, "type": "custom", "module": "joint_normal", "cls": "JointNormal", **extra}
+    y = node("Y", parameter_set="narrow", kwargs={"loc": [9.0]})
+    y.update(y_overrides)
+    return {
+        "name": "shared",
+        "variables": [{"name": n, "kind": "continuous"} for n in ("X1", "X2", "Y")],
+        "parameter_sets": {"centred": {"loc": [3.0], "scale": 0.5}, "narrow": {"scale": 0.1}},
+        "nodes": [node("X1", parameter_set="centred"), node("X2", parameter_set="centred"), y],
+    }
+
+
+def test_nodes_naming_a_parameter_set_receive_its_arguments():
+    spec = ModelSpec.from_dict(shared_model()).validate()
+    _, probs = compile_model(spec, search_path=[TESTS])
+    for name in ("X1", "X2"):
+        assert (probs[name].loc.tolist(), probs[name].scale) == ([3.0], 0.5)
+        assert probs[name].spec.parameter_set == "centred"
+    assert (probs["Y"].loc.tolist(), probs["Y"].scale) == ([9.0], 0.1)    # its own kwargs and the set's
+    assert spec.arguments(spec.node_map["Y"]) == {"scale": 0.1, "loc": [9.0]}
+
+
+def test_parameter_sets_round_trip_before_the_nodes(tmp_path):
+    spec = ModelSpec.from_dict(shared_model())
+    out = spec.to_dict()
+    assert list(out).index("parameter_sets") < list(out).index("nodes")
+    assert out["nodes"][0] == {"name": "X1", "child": "X1", "type": "custom", "module": "joint_normal",
+                               "cls": "JointNormal", "parents": [], "kwargs": {}, "parameter_set": "centred"}
+    assert "parameter_sets" not in field_model().to_dict()                # absent when unused
+    again = load_spec(save_spec(spec, tmp_path / "shared.tbn.json"))
+    assert again.to_dict() == out
+
+
+def test_an_unknown_parameter_set_is_refused():
+    with pytest.raises(SpecError, match="'wide', which is not in"):
+        ModelSpec.from_dict(shared_model(parameter_set="wide")).validate()
+
+
+def test_an_argument_given_twice_is_refused():
+    with pytest.raises(SpecError, match=r"gives \['scale'\] in its kwargs and in its parameter set"):
+        ModelSpec.from_dict(shared_model(kwargs={"loc": [9.0], "scale": 2.0})).validate()

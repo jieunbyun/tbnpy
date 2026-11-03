@@ -30,6 +30,13 @@ Node types
     child variables (``childs``), such as a field drawn jointly over many sites;
     every other type owns one (``child``).
 
+Parameter sets
+--------------
+Constructor arguments that many custom nodes share, such as one fragility curve
+for every bridge of a class, are written once in the spec's ``parameter_sets``
+and named by each node's ``parameter_set``. The node's class receives them with
+the node's own ``kwargs``.
+
 Serialisation is JSON (stdlib only). YAML is accepted too when ``pyyaml``
 happens to be installed, but it is never required.
 """
@@ -47,8 +54,8 @@ __all__ = [
     "ModelSpec", "load_spec", "save_spec",
 ]
 
-#: 2 adds ``childs`` to custom nodes; version 1 files read unchanged.
-SPEC_VERSION = 2
+#: 2 adds ``childs`` to custom nodes; 3 adds ``parameter_sets``. Earlier files read unchanged.
+SPEC_VERSION = 3
 
 CONTINUOUS = "continuous"
 DISCRETE = "discrete"
@@ -339,12 +346,18 @@ class CustomNode(NodeSpec):
     A node owning several variables, such as a field drawn jointly over many
     sites, lists them in ``childs`` instead of naming one ``child``; they reach
     the class in that order.
+
+    ``parameter_set`` names an entry of the spec's ``parameter_sets``: arguments
+    shared by many nodes, written once. The class receives that entry together
+    with ``kwargs``, which hold what is particular to this node; an argument
+    may come from one or the other, not both.
     """
 
     module: str = ""
     cls: str = ""
     kwargs: dict = field(default_factory=dict)
     childs: "list" = field(default_factory=list)
+    parameter_set: str = ""
     type: str = "custom"
 
     def __post_init__(self) -> None:
@@ -357,6 +370,9 @@ class CustomNode(NodeSpec):
         _require(bool(self.module) and bool(self.cls),
                  f"node {self.name!r}: 'module' and 'cls' are required for a "
                  f"custom node")
+        _require(isinstance(self.parameter_set, str),
+                 f"node {self.name!r}: 'parameter_set' is the name of an entry "
+                 f"of the spec's parameter_sets")
 
     @property
     def child_names(self) -> "list":
@@ -377,6 +393,14 @@ _NODE_TYPES = {
 # --------------------------------------------------------------------------
 @dataclass
 class ModelSpec:
+    """A whole model: its variables, its nodes, and the parameter sets nodes share.
+
+    ``parameter_sets`` maps a name to constructor arguments, ``{argument: value}``,
+    that every custom node naming it in ``parameter_set`` receives. Shared
+    parameters are then one entry, not a copy per node, and the file says which
+    nodes share them.
+    """
+
     name: str = ""
     description: str = ""
     variables: "list" = field(default_factory=list)
@@ -384,6 +408,7 @@ class ModelSpec:
     open_questions: "list" = field(default_factory=list)
     source: str = ""
     spec_version: int = SPEC_VERSION
+    parameter_sets: dict = field(default_factory=dict)
 
     # -- lookups -----------------------------------------------------------
     @property
@@ -399,6 +424,11 @@ class ModelSpec:
             if variable_name in n.child_names:
                 return n.name
         return None
+
+    def arguments(self, node: "CustomNode") -> dict:
+        """A custom node's constructor arguments: its parameter set's, then its own ``kwargs``."""
+        shared = self.parameter_sets[node.parameter_set] if node.parameter_set else {}
+        return {**shared, **node.kwargs}
 
     # -- validation --------------------------------------------------------
     def validate(self) -> "ModelSpec":
@@ -435,6 +465,21 @@ class ModelSpec:
                          f"declared variable")
 
         self._check_acyclic(owners)
+
+        for set_name, arguments in self.parameter_sets.items():
+            _require(isinstance(arguments, Mapping),
+                     f"parameter set {set_name!r} must be an object of "
+                     f"constructor arguments, got {type(arguments).__name__}")
+        for n in self.nodes:
+            if not getattr(n, "parameter_set", ""):
+                continue
+            _require(n.parameter_set in self.parameter_sets,
+                     f"node {n.name!r} names parameter set {n.parameter_set!r}, "
+                     f"which is not in the spec's parameter_sets")
+            both = sorted(set(self.parameter_sets[n.parameter_set]) & set(n.kwargs))
+            _require(not both,
+                     f"node {n.name!r} gives {both} in its kwargs and in its "
+                     f"parameter set {n.parameter_set!r}; give each argument once")
 
         for n in self.nodes:
             n.validate_against(variables)
@@ -494,17 +539,19 @@ class ModelSpec:
         out = asdict(self)
         # Drop empties so hand-written files stay readable on round-trip.
         for node in out["nodes"]:
-            for key in ("meaning", "references", "metadata", "childs", "child"):
+            for key in ("meaning", "references", "metadata", "childs", "child", "parameter_set"):
                 if not node.get(key):
                     node.pop(key, None)
         for var in out["variables"]:
             for key in ("states", "support", "bounds", "unit", "meaning"):
                 if not var.get(key):
                     var.pop(key, None)
-        for key in ("description", "open_questions", "source"):
+        for key in ("description", "open_questions", "source", "parameter_sets"):
             if not out.get(key):
                 out.pop(key, None)
-        return out
+        # Shared parameters read before the nodes that name them.
+        order = ["name", "description", "spec_version", "variables", "parameter_sets", "nodes"]
+        return {**{k: out[k] for k in order if k in out}, **out}
 
     @classmethod
     def from_dict(cls, data: Mapping) -> "ModelSpec":
@@ -541,6 +588,8 @@ class ModelSpec:
             open_questions=list(data.get("open_questions", [])),
             source=data.get("source", ""),
             spec_version=version,
+            parameter_sets={k: dict(v) if isinstance(v, Mapping) else v
+                            for k, v in data.get("parameter_sets", {}).items()},
         )
 
 

@@ -142,6 +142,21 @@ It samples a few rows through every object and reports any that returns the wron
 shapes, samples outside its variables' domains, or has a ``log_prob`` that disagrees
 with its ``sample``. See :func:`tbnpy.check_model <tbnpy.probability.check_model>`.
 
+Using the class in a spec
+-------------------------
+
+A spec refers to a custom class by module and class name, and gives its constructor
+arguments in ``kwargs``, or in a shared ``parameter_set`` when many nodes use the same
+ones. :func:`~tbnpy.compile.compile_file` then constructs it with its ``childs`` and
+``parents``:
+
+.. code-block:: json
+
+   {"name": "OC", "type": "custom", "module": "oc", "cls": "OC", "parents": ["C"]}
+
+See :doc:`tbnpy.spec` for ``kwargs``, parameter sets, nodes owning several variables
+and classes that read prestored data.
+
 Device and performance notes
 ----------------------------
 
