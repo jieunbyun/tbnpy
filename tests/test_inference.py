@@ -307,3 +307,44 @@ def test_sample_evidence_batch_size(dict_cpt2):
     assert sampled_probs.keys() == {'A1'}
     assert sampled_probs['A1'].Cs.shape == (n_evi, n_sample, 3)
 
+
+
+def _root(name):
+    """A root probability object owning one variable."""
+    var = variable.Variable(name=name, values=[0, 1])
+    return cpt.Cpt(childs=[var], C=np.array([[0], [1]]), p=np.array([0.5, 0.5]))
+
+
+def test_nodes_ready_together_follow_the_order_of_probs():
+    roots = {name: _root(name) for name in ("z", "a", "m")}
+    assert inference.get_ancestor_order(roots, ["m", "a", "z"]) == ["z", "a", "m"]
+    reordered = {name: roots[name] for name in ("m", "z", "a")}
+    assert inference.get_ancestor_order(reordered, ["z"]) == ["z"]
+    assert inference.get_ancestor_order(reordered, ["a", "z", "m"]) == ["m", "z", "a"]
+
+
+def test_a_seeded_run_gives_the_same_samples_in_every_process():
+    """String hashing differs between processes; the sampling order must not."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    script = (
+        "import torch\n"
+        "from tbnpy import inference, cpt, variable\n"
+        "import numpy as np\n"
+        "probs = {}\n"
+        "for i in range(40):\n"
+        "    v = variable.Variable(name=f'node{i}', values=[0, 1, 2])\n"
+        "    probs[f'node{i}'] = cpt.Cpt(childs=[v], C=np.array([[0], [1], [2]]), p=np.array([0.2, 0.3, 0.5]))\n"
+        "torch.manual_seed(5)\n"
+        "out = inference.sample(probs, set(probs), n_sample=50)\n"
+        "print(list(out), [int(out[k].Cs.sum()) for k in sorted(out)])\n"
+    )
+    root = Path(__file__).resolve().parents[1]
+    runs = set()
+    for hash_seed in ("1", "2", "3"):
+        env = {**os.environ, "PYTHONHASHSEED": hash_seed, "PYTHONPATH": str(root)}
+        result = subprocess.run([sys.executable, "-c", script], env=env, capture_output=True, text=True, check=True)
+        runs.add(result.stdout)
+    assert len(runs) == 1

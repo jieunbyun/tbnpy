@@ -27,7 +27,9 @@ Node types
 ``custom``
     A hand-written node class, imported by module and name. Bespoke nodes stay
     first-class citizens: anything the declarative types cannot express is
-    written in Python and referenced from here.
+    written in Python and referenced from here. A custom node may own several
+    child variables (``childs``), such as a field drawn jointly over many sites;
+    every other type owns one (``child``).
 
 Serialisation is JSON (stdlib only). YAML is accepted too when ``pyyaml``
 happens to be installed, but it is never required.
@@ -46,7 +48,8 @@ __all__ = [
     "ModelSpec", "load_spec", "save_spec",
 ]
 
-SPEC_VERSION = 1
+#: 2 adds ``childs`` to custom nodes; version 1 files read unchanged.
+SPEC_VERSION = 2
 
 CONTINUOUS = "continuous"
 DISCRETE = "discrete"
@@ -156,13 +159,19 @@ class NodeSpec:
 
     def __post_init__(self) -> None:
         _require(bool(self.name), "a node needs a name")
-        if not self.child:
+        if not self.child and not getattr(self, "childs", None):
             self.child = self.name
         _require(len(self.parents) == len(set(self.parents)),
                  f"node {self.name!r} lists a parent more than once")
-        _require(self.child not in self.parents,
-                 f"node {self.name!r} lists its own child {self.child!r} "
-                 f"as a parent")
+        for child in self.child_names:
+            _require(child not in self.parents,
+                     f"node {self.name!r} lists its own child {child!r} "
+                     f"as a parent")
+
+    @property
+    def child_names(self) -> "list":
+        """The variables this node owns: ``[child]``, or a custom node's ``childs``."""
+        return [self.child]
 
     def validate_against(self, variables: "dict") -> None:
         """Type-specific checks that need the variable table. Overridden below."""
@@ -320,18 +329,32 @@ class CustomNode(NodeSpec):
     The class must follow the tbnpy node protocol: ``childs``, ``parents``,
     ``sample``, ``log_prob``. It is given ``childs`` and ``parents`` (and
     ``device`` when its signature accepts one) plus everything in ``kwargs``.
+
+    A node owning several variables, such as a field drawn jointly over many
+    sites, lists them in ``childs`` instead of naming one ``child``; they reach
+    the class in that order.
     """
 
     module: str = ""
     cls: str = ""
     kwargs: dict = field(default_factory=dict)
+    childs: "list" = field(default_factory=list)
     type: str = "custom"
 
     def __post_init__(self) -> None:
+        if self.childs:
+            _require(not self.child,
+                     f"node {self.name!r}: give 'child' or 'childs', not both")
+            _require(len(self.childs) == len(set(self.childs)),
+                     f"node {self.name!r} lists a child more than once")
         super().__post_init__()
         _require(bool(self.module) and bool(self.cls),
                  f"node {self.name!r}: 'module' and 'cls' are required for a "
                  f"custom node")
+
+    @property
+    def child_names(self) -> "list":
+        return list(self.childs) if self.childs else [self.child]
 
 
 _NODE_TYPES = {
@@ -384,7 +407,7 @@ class ModelSpec:
 
     def owner_of(self, variable_name: str) -> "str | None":
         for n in self.nodes:
-            if n.child == variable_name:
+            if variable_name in n.child_names:
                 return n.name
         return None
 
@@ -403,13 +426,14 @@ class ModelSpec:
         # Every variable is the child of exactly one node.
         owners: dict = {}
         for n in self.nodes:
-            _require(n.child in variables,
-                     f"node {n.name!r} has child {n.child!r}, which is not a "
-                     f"declared variable")
-            _require(n.child not in owners,
-                     f"variable {n.child!r} is the child of both "
-                     f"{owners.get(n.child)!r} and {n.name!r}")
-            owners[n.child] = n.name
+            for child in n.child_names:
+                _require(child in variables,
+                         f"node {n.name!r} has child {child!r}, which is not a "
+                         f"declared variable")
+                _require(child not in owners,
+                         f"variable {child!r} is the child of both "
+                         f"{owners.get(child)!r} and {n.name!r}")
+                owners[child] = n.name
         orphans = sorted(set(variables) - set(owners))
         _require(not orphans,
                  f"these variables are not produced by any node: {orphans}")
@@ -459,7 +483,7 @@ class ModelSpec:
     def topological_order(self) -> "list":
         """Node names ordered so parents precede children."""
         self.validate()
-        owners = {n.child: n.name for n in self.nodes}
+        owners = {child: n.name for n in self.nodes for child in n.child_names}
         pending = {n.name: {owners[p] for p in n.parents if owners[p] != n.name}
                    for n in self.nodes}
         order: list = []
@@ -483,7 +507,7 @@ class ModelSpec:
             out.pop("analysis", None)
         # Drop empties so hand-written files stay readable on round-trip.
         for node in out["nodes"]:
-            for key in ("meaning", "references", "metadata"):
+            for key in ("meaning", "references", "metadata", "childs", "child"):
                 if not node.get(key):
                     node.pop(key, None)
         for var in out["variables"]:

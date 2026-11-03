@@ -490,7 +490,7 @@ def compile_model(spec: ModelSpec, device: str = "cpu",
     probs = {}
 
     for node in spec.nodes:
-        childs = [varis[node.child]]
+        childs = [varis[c] for c in node.child_names]
         parents = [varis[p] for p in node.parents]
 
         if isinstance(node, DiscreteCptNode):

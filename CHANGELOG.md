@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.1
+
+### Added
+
+- A `custom` spec node may own several child variables: list them in `childs` instead of
+  naming one `child`. A field drawn jointly over many sites, such as a ground-motion
+  field, is then one node of a spec, as it is one probability object. Specs written by
+  this version say `"spec_version": 2`; version 1 files load unchanged.
+
+### Fixed
+
+- A seeded run now gives the same samples in every process. `inference.get_ancestor_order`
+  ordered nodes by iterating a Python `set`, and string hashing differs between
+  processes, so the order in which nodes drew their random numbers, and hence the
+  samples, changed from run to run. Among nodes ready at the same time, the order now
+  follows `probs`. Seeded results therefore differ from 0.3.0's, once, and are then
+  reproducible.
+- `inference.sample` and `inference.sample_evidence` return their query nodes in sampling
+  order, not a set's.
+
 ## 0.3.0
 
 ### Added

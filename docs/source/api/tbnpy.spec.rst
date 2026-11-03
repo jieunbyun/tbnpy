@@ -27,6 +27,23 @@ A spec has five node types:
      - A hand-written probability class, imported by module and class name. Anything
        the other types cannot express is written in Python and referenced from here.
 
+Every node owns one variable, named by ``child`` (by default, the node's own name),
+except a ``custom`` node, which may own several. It lists them in ``childs``, and its
+class receives them in that order, as a field drawn jointly over many sites needs:
+
+.. code-block:: json
+
+   {"name": "ground-motion", "type": "custom",
+    "module": "my_hazard", "cls": "GroundMotionField",
+    "childs": ["SA::site1", "SA::site2", "SA::site3"],
+    "parents": [],
+    "kwargs": {"mw": 7.0, "sites": [[36.6, -121.9], [36.7, -121.6], [36.9, -121.4]]}}
+
+``kwargs`` are the class's constructor arguments, so a spec built from custom nodes
+records each probability object as its class, its variables and its arguments. Files
+using ``childs`` declare ``"spec_version": 2``; earlier files are version 1 and load
+unchanged.
+
 The ABCDE example's model as a spec is
 ``examples/ABCDE/abcde.tbn.json``; see :doc:`../examples/abcde_example`.
 

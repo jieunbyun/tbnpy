@@ -11,8 +11,17 @@ TBN tensorises the quantification and inferences of Bayesian networks (BNs) and 
 
 This is the documentation of tbnpy |release|.
 
-What's new in 0.3.0
--------------------
+What's new
+----------
+
+In 0.3.1:
+
+- **Joint fields in specs.** A ``custom`` spec node may own several variables (``childs``),
+  so a field drawn jointly over many sites is one node, as it is one probability object.
+- **Reproducible seeds.** A seeded run gives the same samples in every process; before,
+  the sampling order depended on Python's per-process string hashing.
+
+In 0.3.0:
 
 - **Readable models.** A variable or probability object prints as one line, such as
   ``C(P(C | A, B): normal(loc=A + B, scale=0.6))``, and ``print`` shows each variable's

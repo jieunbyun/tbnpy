@@ -33,6 +33,11 @@ def get_ancestor_order(probs, query_nodes):
             query_nodes, including the query nodes themselves. The order
             ensures that if N1 is a parent of N2 (i.e., a child variable of
             N1 appears in N2.parents), then N1 appears before N2.
+
+            The order is deterministic: among nodes ready at the same time,
+            it follows the order of ``probs``. Sampling draws random numbers
+            node by node in this order, so a seeded run gives the same
+            samples in every process.
     """
 
     # 1. Validate inputs
@@ -90,24 +95,27 @@ def get_ancestor_order(probs, query_nodes):
                 visited.add(parent_node)
                 stack.append(parent_node)
 
-    ancestors = visited
+    # Ancestors in the order of `probs`, never in a set's iteration order:
+    # string hashing differs between processes, and the sampling order (and so
+    # which random numbers each node draws) must not.
+    ancestors = [n for n in probs if n in visited]
 
     # 4. Build adjacency lists at the NODE level (deduplicated edges)
-    children_of = {n: set() for n in ancestors}
+    children_of = {n: [] for n in ancestors}
     indegree = {n: 0 for n in ancestors}
 
     for child_node in ancestors:
-        parent_nodes = set()
+        parent_nodes = []
         for parent_var in probs[child_node].parents:
             parent_node = var_to_node[parent_var.name]
             # Skip self-loops; we don't model a node as its own parent.
             if parent_node == child_node:
                 continue
-            if parent_node in ancestors:
-                parent_nodes.add(parent_node)
+            if parent_node in visited and parent_node not in parent_nodes:
+                parent_nodes.append(parent_node)
 
         for parent_node in parent_nodes:
-            children_of[parent_node].add(child_node)
+            children_of[parent_node].append(child_node)
         indegree[child_node] = len(parent_nodes)
 
     # 5. Topological sort (Kahn's algorithm)
@@ -236,7 +244,7 @@ def sample(
     if not accumulate_query:
         return result
 
-    for node in query_set:
+    for node in (n for n in ordered_nodes if n in query_set):
         prob = probs_copy[node]
         prob.Cs = torch.cat(query_Cs_batches[node], dim=0)
         prob.ps = torch.cat(query_ps_batches[node], dim=0)
@@ -540,7 +548,7 @@ def sample_evidence(probs, query_nodes, n_sample, evidence_df, batch_size=50_000
     # Assemble results for query nodes only
     # --------------------------------------------------
     result = {}
-    for node in query_set:
+    for node in (n for n in ordered_nodes if n in query_set):
         prob = probs_copy[node]
         prob.Cs = torch.cat(query_Cs_batches[node], dim=1)
         prob.ps = torch.cat(query_ps_batches[node], dim=1)

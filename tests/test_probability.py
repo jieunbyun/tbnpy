@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import numpy as np
@@ -145,7 +146,7 @@ def test_a_failing_form_does_not_break_the_reading():
 def test_the_package_exports_the_new_names():
     assert tbnpy.Probability is Probability
     assert tbnpy.check_model is check_model
-    assert tbnpy.__version__ == "0.3.0"
+    assert re.fullmatch(r"\d+\.\d+\.\d+", tbnpy.__version__)
 
 
 # ---------------------------------------------------------------------------

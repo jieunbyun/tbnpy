@@ -78,6 +78,10 @@ Topological utilities
    - The function performs validation and will raise ``AssertionError`` if inputs are inconsistent
      (e.g., missing nodes, missing attributes).
    - Cycles are detected indirectly via topological sorting consistency checks.
+   - The order is deterministic: among nodes ready at the same time, it follows the order
+     of ``probs``. Sampling draws random numbers node by node in this order, so a seeded
+     run gives the same samples in every process (before 0.3.1 it depended on Python's
+     per-process string hashing).
 
 
 Forward sampling without evidence

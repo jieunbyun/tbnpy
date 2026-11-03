@@ -315,3 +315,72 @@ def test_child_sample_requires_parent_columns():
     _, probs = compile_model(minimal())
     with pytest.raises(CompileError, match="Cs_pars"):
         probs["Y"].sample(n_sample=10)
+
+
+# ---------------------------------------------------------------------------
+# Custom nodes owning several childs (spec version 2)
+# ---------------------------------------------------------------------------
+TESTS = Path(__file__).resolve().parent
+
+
+def field_model(**node_overrides):
+    """A custom root owning X1 and X2 jointly, and Y | X2 ~ Normal(X2, 1)."""
+    field = {"name": "field", "type": "custom", "module": "joint_normal", "cls": "JointNormal",
+             "childs": ["X1", "X2"], "kwargs": {"loc": [0.0, 5.0], "scale": 0.5}}
+    field.update(node_overrides)
+    return ModelSpec.from_dict({
+        "name": "field",
+        "variables": [{"name": n, "kind": "continuous"} for n in ("X1", "X2", "Y")],
+        "nodes": [field,
+                  {"name": "Y", "type": "distribution", "parents": ["X2"], "family": "normal",
+                   "parameters": {"loc": "X2", "scale": "1.0"}}],
+    })
+
+
+def test_a_custom_node_may_own_several_childs():
+    spec = field_model().validate()
+    assert spec.owner_of("X1") == spec.owner_of("X2") == "field"
+    assert spec.topological_order() == ["field", "Y"]
+
+    _, probs = compile_model(spec, search_path=[TESTS])
+    assert [v.name for v in probs["field"].childs] == ["X1", "X2"]       # in the order given
+    torch.manual_seed(0)
+    out = inference.sample(probs, ["field", "Y"], n_sample=4000)
+    assert out["field"].Cs.shape == (4000, 2)
+    assert out["field"].Cs[:, 1].mean().item() == pytest.approx(5.0, abs=0.05)
+    assert out["Y"].Cs.mean().item() == pytest.approx(5.0, abs=0.1)     # Y reads the field's second child
+
+
+def test_a_multi_child_node_round_trips_without_a_child_field(tmp_path):
+    spec = field_model()
+    node = spec.to_dict()["nodes"][0]
+    assert node["childs"] == ["X1", "X2"] and "child" not in node
+    again = load_spec(save_spec(spec, tmp_path / "field.tbn.json"))
+    assert again.to_dict() == spec.to_dict()
+
+
+def test_child_and_childs_together_are_refused():
+    with pytest.raises(SpecError, match="not both"):
+        field_model(child="X1")
+
+
+def test_a_variable_in_two_nodes_childs_is_refused():
+    data = field_model().to_dict()
+    data["nodes"].append({"name": "other", "type": "custom", "module": "joint_normal",
+                          "cls": "JointNormal", "childs": ["X2"], "kwargs": {"loc": [0.0]}})
+    with pytest.raises(SpecError, match="child of both"):
+        ModelSpec.from_dict(data).validate()
+
+
+def test_a_node_cannot_read_its_own_childs():
+    with pytest.raises(SpecError, match="own child 'X2'"):
+        field_model(parents=["X2"])
+
+
+def test_version_1_files_still_load_and_new_files_say_version_2(tmp_path):
+    data = minimal().to_dict()
+    data["spec_version"] = 1
+    assert ModelSpec.from_dict(data).validate() is not None
+    path = save_spec(ModelSpec.from_dict(data), tmp_path / "v.tbn.json")
+    assert json.loads(path.read_text(encoding="utf-8"))["spec_version"] == 1     # a file keeps its version
+    assert field_model().to_dict()["spec_version"] == 2
