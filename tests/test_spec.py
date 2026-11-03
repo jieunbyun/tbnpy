@@ -430,3 +430,17 @@ def test_only_a_class_naming_directory_receives_it(tmp_path):
     """JointNormal has no directory parameter: it is built exactly as before."""
     _, probs = compile_model(field_model(), search_path=[TESTS], directory=tmp_path)
     assert not hasattr(probs["field"], "directory")
+
+
+def test_a_null_support_side_is_unbounded():
+    spec = ModelSpec.from_dict({
+        "name": "positive",
+        "variables": [{"name": "V", "kind": "continuous", "support": [0, None]}],
+        "nodes": [{"name": "V", "type": "distribution", "parents": [], "family": "lognormal",
+                   "parameters": {"loc": "0", "scale": "1"}}],
+    })
+    varis, _ = compile_model(spec)
+    assert varis["V"].values == (0, float("inf"))
+    with pytest.raises(SpecError, match="low <= high"):
+        ModelSpec.from_dict({**spec.to_dict(), "variables": [
+            {"name": "V", "kind": "continuous", "support": [2, 1]}]})

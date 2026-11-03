@@ -14,6 +14,11 @@ This is the documentation of tbnpy |release|.
 What's new
 ----------
 
+In 0.3.4:
+
+- **Half-open supports.** A continuous variable's ``support`` may be ``null`` on one side,
+  so ``[0, null]`` declares a positive quantity in JSON.
+
 In 0.3.3:
 
 - **Prestored data in specs.** A custom node's ``kwargs`` can name data files relative to

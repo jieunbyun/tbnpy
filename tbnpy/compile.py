@@ -56,9 +56,9 @@ def build_variables(spec: ModelSpec) -> dict:
         if v.is_discrete:
             values = list(v.states)
         else:
-            low, high = (v.support if v.support is not None
-                         else (-torch.inf, torch.inf))
-            values = (low, high)
+            low, high = v.support if v.support is not None else (None, None)
+            # A null side is unbounded.
+            values = (-torch.inf if low is None else low, torch.inf if high is None else high)
         varis[v.name] = variable_mod.Variable(name=v.name, values=values)
     return varis
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.4
+
+### Added
+
+- A continuous variable's `support` may be open on one side: `[0, null]` is [0, ∞),
+  `[null, 0]` is (−∞, 0]. JSON cannot write infinity, so a positive quantity such as a
+  ground-motion intensity could not be declared in a spec before.
+
 ## 0.3.3
 
 ### Added

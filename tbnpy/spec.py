@@ -80,7 +80,9 @@ class VariableSpec:
         expressions see when the variable is used as a value.
     support:
         Continuous only: ``(low, high)`` for the variable's actual support.
-        Defaults to the whole real line.
+        Defaults to the whole real line. Either side may be ``None`` (JSON
+        ``null``) for an unbounded side, e.g. ``[0, null]`` for a positive
+        quantity, since JSON cannot write infinity.
     bounds:
         Optional plausibility range, used by diagnostics to flag samples that
         leave it. Not a truncation -- GeNIe bounds are frequently only a
@@ -115,9 +117,10 @@ class VariableSpec:
         for attr in ("support", "bounds"):
             rng = getattr(self, attr)
             if rng is not None:
-                _require(len(rng) == 2 and rng[0] <= rng[1],
+                _require(len(rng) == 2 and (None in rng or rng[0] <= rng[1]),
                          f"variable {self.name!r}: {attr} must be "
-                         f"[low, high] with low <= high, got {rng!r}")
+                         f"[low, high] with low <= high (null for an unbounded "
+                         f"side), got {rng!r}")
 
     # -- derived -----------------------------------------------------------
     @property
