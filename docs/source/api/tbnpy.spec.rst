@@ -44,6 +44,33 @@ records each probability object as its class, its variables and its arguments. F
 using ``childs`` declare ``"spec_version": 2``; earlier files are version 1 and load
 unchanged.
 
+Prestored data
+--------------
+
+``kwargs`` are JSON, so data too large or too binary to write inline (rule sets, lookup
+tables, grids, a surrogate model's weights) is named by file instead, relative to the
+spec's folder. A custom class that has a ``directory`` parameter receives that folder:
+
+.. code-block:: json
+
+   {"name": "SystemState::n3", "type": "custom",
+    "module": "my_system", "cls": "SystemState",
+    "childs": ["SystemState::n3"], "parents": ["EdgeOpen::e1", "EdgeOpen::e2"],
+    "kwargs": {"network": "network.json", "rules": "rules/n3.pt"}}
+
+.. code-block:: python
+
+   class SystemState(Probability):
+       def __init__(self, childs, parents, network, rules, directory=None, device="cpu"):
+           super().__init__(childs, parents, device)
+           self.graph = load_graph(Path(directory) / network)
+           self.rules = torch.load(Path(directory) / rules)
+
+:func:`~tbnpy.compile.compile_file` passes the spec file's folder;
+:func:`~tbnpy.compile.compile_model` takes it as ``directory=...`` for a spec built in
+memory. A spec is then portable together with the files it names: copy the folder, not
+the JSON alone. A class without a ``directory`` parameter never receives one.
+
 The ABCDE example's model as a spec is
 ``examples/ABCDE/abcde.tbn.json``; see :doc:`../examples/abcde_example`.
 

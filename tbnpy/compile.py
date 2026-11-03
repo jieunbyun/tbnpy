@@ -396,7 +396,7 @@ def _build_cpt(node: DiscreteCptNode, childs, parents, device):
 
 
 # --------------------------------------------------------------------------
-def _build_custom(node: CustomNode, childs, parents, device, search_path):
+def _build_custom(node: CustomNode, childs, parents, device, search_path, directory=None):
     added = []
     for entry in search_path or []:
         entry = str(Path(entry).resolve())
@@ -425,10 +425,15 @@ def _build_custom(node: CustomNode, childs, parents, device, search_path):
             params = inspect.signature(klass).parameters
             accepts_device = "device" in params or any(
                 p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
+            accepts_directory = "directory" in params
         except (TypeError, ValueError):
-            accepts_device = True
+            accepts_device, accepts_directory = True, False
         if accepts_device and "device" not in kwargs:
             kwargs["device"] = device
+        # The folder that file names in kwargs are relative to; only for a class
+        # that names a `directory` parameter, so **kwargs never receive it unasked.
+        if accepts_directory and directory is not None and "directory" not in kwargs:
+            kwargs["directory"] = Path(directory)
 
         try:
             obj = klass(childs=list(childs), parents=list(parents), **kwargs)
@@ -460,7 +465,7 @@ def _build_custom(node: CustomNode, childs, parents, device, search_path):
 # --------------------------------------------------------------------------
 def compile_model(spec: ModelSpec, device: str = "cpu",
                   search_path: "Sequence | None" = None,
-                  validate: bool = True):
+                  validate: bool = True, directory=None):
     """Turn a spec into ``(varis, probs)``.
 
     Parameters
@@ -475,6 +480,12 @@ def compile_model(spec: ModelSpec, device: str = "cpu",
     validate:
         Re-check the spec before compiling. Leave on unless it was just
         validated.
+    directory:
+        The folder that file names in custom nodes' ``kwargs`` are relative
+        to, usually the folder holding the model file. It is passed as
+        ``directory`` to every custom class whose constructor has a
+        ``directory`` parameter, so the class can load prestored data (rule
+        sets, tables, grids, weights) that a JSON spec cannot hold inline.
 
     Returns
     -------
@@ -498,7 +509,7 @@ def compile_model(spec: ModelSpec, device: str = "cpu",
             continue
         if isinstance(node, CustomNode):
             probs[node.name] = _build_custom(node, childs, parents, device,
-                                             search_path)
+                                             search_path, directory)
             continue
 
         scope = _scope_for(node, variables)
@@ -519,9 +530,14 @@ def compile_model(spec: ModelSpec, device: str = "cpu",
 
 
 def compile_file(path, device: str = "cpu", search_path=None):
-    """Load a spec file and compile it, searching next to the file by default."""
+    """Load a spec file and compile it, searching next to the file by default.
+
+    File names in custom nodes' ``kwargs`` are relative to the spec file's
+    folder, which custom classes receive as ``directory`` (see compile_model).
+    """
     path = Path(path)
     spec = load_spec(path)
     if search_path is None:
         search_path = [path.parent]
-    return spec, *compile_model(spec, device=device, search_path=search_path)
+    return spec, *compile_model(spec, device=device, search_path=search_path,
+                                directory=path.parent)

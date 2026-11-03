@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.3
+
+### Added
+
+- Custom spec nodes can use prestored data. A spec is JSON, so data too large or too
+  binary to write into a node's `kwargs` (rule sets, tables, grids, model weights) is
+  named there by file, relative to the spec's folder. `compile_file` passes that folder
+  to every custom class whose constructor has a `directory` parameter; `compile_model`
+  takes it as `directory=...` for a spec built in memory. Classes without the parameter
+  are built as before.
+
 ## 0.3.2
 
 ### Removed

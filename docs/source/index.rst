@@ -14,6 +14,11 @@ This is the documentation of tbnpy |release|.
 What's new
 ----------
 
+In 0.3.3:
+
+- **Prestored data in specs.** A custom node's ``kwargs`` can name data files relative to
+  the spec, and its class receives the spec's folder as ``directory``.
+
 In 0.3.2:
 
 - **Specs describe only the model.** The optional ``analysis`` section (intended queries

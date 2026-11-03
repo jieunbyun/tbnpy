@@ -384,3 +384,49 @@ def test_version_1_files_still_load_and_new_files_say_version_2(tmp_path):
     path = save_spec(ModelSpec.from_dict(data), tmp_path / "v.tbn.json")
     assert json.loads(path.read_text(encoding="utf-8"))["spec_version"] == 1     # a file keeps its version
     assert field_model().to_dict()["spec_version"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Prestored data: custom classes receive the spec's folder as `directory`
+# ---------------------------------------------------------------------------
+def table_spec():
+    """X read from data/x.json, named relative to the spec; Y | X ~ Normal(X, 1)."""
+    return {
+        "name": "table",
+        "variables": [{"name": "X", "kind": "continuous"}, {"name": "Y", "kind": "continuous"}],
+        "nodes": [
+            {"name": "X", "type": "custom", "module": "table_normal", "cls": "TableNormal",
+             "kwargs": {"table": "data/x.json"}},
+            {"name": "Y", "type": "distribution", "parents": ["X"], "family": "normal",
+             "parameters": {"loc": "X", "scale": "1.0"}},
+        ],
+    }
+
+
+def _write_table(folder):
+    (folder / "data").mkdir(parents=True)
+    (folder / "data" / "x.json").write_text(json.dumps({"loc": 3.0, "scale": 0.5}), encoding="utf-8")
+
+
+def test_compile_file_gives_a_custom_class_the_spec_folder(tmp_path):
+    _write_table(tmp_path)
+    path = tmp_path / "table.tbn.json"
+    path.write_text(json.dumps(table_spec()), encoding="utf-8")
+
+    _, _, probs = compile_file(path, search_path=[TESTS])
+    assert probs["X"].directory == tmp_path
+    assert (probs["X"].loc, probs["X"].scale) == (3.0, 0.5)              # read from the named file
+    torch.manual_seed(0)
+    assert inference.sample(probs, ["Y"], n_sample=4000)["Y"].Cs.mean().item() == pytest.approx(3.0, abs=0.1)
+
+
+def test_compile_model_takes_the_folder_explicitly(tmp_path):
+    _write_table(tmp_path)
+    _, probs = compile_model(ModelSpec.from_dict(table_spec()), search_path=[TESTS], directory=tmp_path)
+    assert probs["X"].loc == 3.0
+
+
+def test_only_a_class_naming_directory_receives_it(tmp_path):
+    """JointNormal has no directory parameter: it is built exactly as before."""
+    _, probs = compile_model(field_model(), search_path=[TESTS], directory=tmp_path)
+    assert not hasattr(probs["field"], "directory")

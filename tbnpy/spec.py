@@ -329,6 +329,10 @@ class CustomNode(NodeSpec):
     ``sample``, ``log_prob``. It is given ``childs`` and ``parents`` (and
     ``device`` when its signature accepts one) plus everything in ``kwargs``.
 
+    ``kwargs`` are JSON, so data too large or too binary to write inline (rule
+    sets, tables, grids, weights) is named by file, relative to the spec's
+    folder. A class with a ``directory`` parameter receives that folder.
+
     A node owning several variables, such as a field drawn jointly over many
     sites, lists them in ``childs`` instead of naming one ``child``; they reach
     the class in that order.
