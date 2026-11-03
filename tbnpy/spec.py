@@ -8,11 +8,10 @@ in a GUI. :mod:`tbnpy.compile` turns a spec into the ``varis`` and ``probs``
 objects the rest of the library works with.
 
 The spec deliberately describes only the *model*. It carries nothing about how
-inference should be run, because tbnpy exists precisely for problems that need
-bespoke inference algorithms, and a model description that presumed one
-algorithm would be a description of the wrong thing. Hints about intended
-analysis live in the optional :class:`AnalysisSpec` and are never required to
-build a model.
+it will be queried or how inference should be run: a Bayesian network answers
+any query within its scope, and tbnpy exists precisely for problems that need
+bespoke inference algorithms, so a model description that presumed particular
+queries or one algorithm would be a description of the wrong thing.
 
 Node types
 ----------
@@ -44,7 +43,7 @@ from typing import Any, Iterable, Mapping, Sequence
 
 __all__ = [
     "SpecError", "VariableSpec", "NodeSpec", "DistributionNode", "EquationNode",
-    "DiscreteCptNode", "DiscretiseNode", "CustomNode", "AnalysisSpec",
+    "DiscreteCptNode", "DiscretiseNode", "CustomNode",
     "ModelSpec", "load_spec", "save_spec",
 ]
 
@@ -367,22 +366,6 @@ _NODE_TYPES = {
 
 
 # --------------------------------------------------------------------------
-# Analysis hints -- optional, and never needed to build a model
-# --------------------------------------------------------------------------
-@dataclass
-class AnalysisSpec:
-    """Intended-use hints. Advisory only; no compiler behaviour depends on it."""
-
-    query_nodes: "list" = field(default_factory=list)
-    observed_nodes: "list" = field(default_factory=list)
-    notes: str = ""
-    #: Free-form room for algorithm-specific settings, kept out of the model
-    #: proper so that adding a bespoke inference method never changes the
-    #: model format.
-    options: dict = field(default_factory=dict)
-
-
-# --------------------------------------------------------------------------
 # The model
 # --------------------------------------------------------------------------
 @dataclass
@@ -391,7 +374,6 @@ class ModelSpec:
     description: str = ""
     variables: "list" = field(default_factory=list)
     nodes: "list" = field(default_factory=list)
-    analysis: "AnalysisSpec | None" = None
     open_questions: "list" = field(default_factory=list)
     source: str = ""
     spec_version: int = SPEC_VERSION
@@ -503,8 +485,6 @@ class ModelSpec:
     # -- serialisation -----------------------------------------------------
     def to_dict(self) -> dict:
         out = asdict(self)
-        if self.analysis is None:
-            out.pop("analysis", None)
         # Drop empties so hand-written files stay readable on round-trip.
         for node in out["nodes"]:
             for key in ("meaning", "references", "metadata", "childs", "child"):
@@ -544,16 +524,13 @@ class ModelSpec:
                      f"field(s) {unknown}; allowed: {sorted(allowed)}")
             nodes.append(klass(**raw))
 
-        analysis = None
-        if data.get("analysis"):
-            analysis = AnalysisSpec(**data["analysis"])
-
+        # Files from earlier versions may carry an "analysis" section of intended
+        # queries. A model does not fix its queries, so it is read past, not kept.
         return cls(
             name=data.get("name", ""),
             description=data.get("description", ""),
             variables=variables,
             nodes=nodes,
-            analysis=analysis,
             open_questions=list(data.get("open_questions", [])),
             source=data.get("source", ""),
             spec_version=version,

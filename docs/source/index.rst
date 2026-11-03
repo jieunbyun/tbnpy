@@ -14,6 +14,12 @@ This is the documentation of tbnpy |release|.
 What's new
 ----------
 
+In 0.3.2:
+
+- **Specs describe only the model.** The optional ``analysis`` section (intended queries
+  and observed nodes) is gone: a Bayesian network answers any query within its scope.
+  Older files that have one still load.
+
 In 0.3.1:
 
 - **Joint fields in specs.** A ``custom`` spec node may own several variables (``childs``),

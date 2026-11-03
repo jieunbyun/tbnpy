@@ -54,4 +54,4 @@ API
 ---
 
 .. automodule:: tbnpy.spec
-   :members: ModelSpec, VariableSpec, NodeSpec, DistributionNode, EquationNode, DiscreteCptNode, DiscretiseNode, CustomNode, AnalysisSpec, SpecError, load_spec, save_spec
+   :members: ModelSpec, VariableSpec, NodeSpec, DistributionNode, EquationNode, DiscreteCptNode, DiscretiseNode, CustomNode, SpecError, load_spec, save_spec

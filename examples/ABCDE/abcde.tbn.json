@@ -21,10 +21,5 @@
     {"name": "D", "type": "discrete_cpt", "parents": [], "probabilities": [0.4, 0.6]},
     {"name": "E", "type": "equation", "parents": ["C", "D"], "equation": "If(D == 0, C, 0)",
      "meaning": "E = C if D == 0, else 0"}
-  ],
-  "analysis": {
-    "query_nodes": ["C", "E"],
-    "observed_nodes": ["OC"],
-    "notes": "Condition on OC with tbnpy.inference.sample_evidence; E is deterministic, so observe OC rather than E."
-  }
+  ]
 }

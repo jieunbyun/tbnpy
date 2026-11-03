@@ -268,12 +268,12 @@ def test_metadata_survives_compilation_for_bespoke_algorithms():
     assert probs["Y"].spec_metadata["solver_hint"] == "block-update with X"
 
 
-def test_analysis_hints_are_optional_and_do_not_affect_compilation():
-    with_hints = compile_model(load_spec(ABCDE))[1]
-    spec = load_spec(ABCDE)
-    spec.analysis = None
-    without = compile_model(spec)[1]
-    assert sorted(with_hints) == sorted(without)
+def test_a_spec_names_no_queries_and_an_old_analysis_section_is_read_past():
+    """A model answers any query in its scope, so a spec does not list intended ones."""
+    data = minimal().to_dict()
+    assert "analysis" not in data and not hasattr(ModelSpec.from_dict(data), "analysis")
+    data["analysis"] = {"query_nodes": ["Y"], "observed_nodes": ["X"]}     # as earlier files had
+    assert ModelSpec.from_dict(data).to_dict() == minimal().to_dict()
 
 
 # ---------------------------------------------------------------------------

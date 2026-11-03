@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.2
+
+### Removed
+
+- The spec's optional `analysis` section (`AnalysisSpec`: intended query and observed
+  nodes, notes, options). A Bayesian network answers any query within its scope, so a
+  model description does not name its queries in advance. A file that still has the
+  section loads as before; the section is read past and not written back.
+  `examples/ABCDE/abcde.tbn.json` no longer has one.
+
 ## 0.3.1
 
 ### Added
